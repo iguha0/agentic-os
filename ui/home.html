@@ -507,9 +507,10 @@ async function loadShares() {
           <span class="mode-badge mode-${mode}">${mode.toUpperCase()}</span>
           <span class="share-title">${sh.title||sh.file}</span>
         </div>
-        <div class="share-meta">${String(sh.cid).slice(0,20)}… · ${sh.file||''}</div>
+        <div class="share-meta" id="meta-${sh.cid}">${String(sh.cid).slice(0,20)}… · ${sh.file||''}</div>
         <div class="share-actions">
           <button class="mini-btn" onclick="copyCID('${sh.cid}')">Copy CID</button>
+          <button class="mini-btn" onclick="loadAccess('${sh.cid}')">Access log</button>
           <button class="mini-btn danger" onclick="revokeShare('${sh.cid}')">Revoke</button>
         </div>`;
       list.appendChild(card);
@@ -517,6 +518,15 @@ async function loadShares() {
   } catch(e) { $('share-list').innerHTML = '<div class="empty-hint">Failed to load shares</div>'; }
 }
 function copyCID(cid){ navigator.clipboard && navigator.clipboard.writeText(cid); alert('CID copied:\n'+cid.slice(0,24)+'…'); }
+async function loadAccess(cid) {
+  const el = document.getElementById('meta-' + cid);
+  try {
+    const r = await fetch('/cgi-bin/share_log.sh?cid=' + cid);
+    const d = await r.json();
+    const last = (d.entries||'').split('|').filter(Boolean).pop() || 'no accesses yet';
+    el.innerHTML += `<br>⚡ ${d.count} access(es). Latest: ${last}`;
+  } catch(e) { el.innerHTML += '<br>⚡ log unavailable'; }
+}
 async function createShare() {
   const file = $('sh-file').value.trim();
   if (!file) { $('sh-link').style.display='block'; $('sh-link').textContent='Enter a file path first'; return; }

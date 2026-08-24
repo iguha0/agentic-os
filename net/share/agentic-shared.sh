@@ -266,7 +266,10 @@ publish_to_dht() {
     mime=$(file -b --mime-type "$file" 2>/dev/null || echo "application/octet-stream")
     ts=$(date +%s)
 
-    record="{\"cid\":\"$cid\",\"node_id\":\"$NODE_ID\",\"relay_url\":\"$RELAY_URL\",\"title\":\"$title\",\"type\":\"$mime\",\"size_kb\":$size_kb,\"published\":$ts}"
+    # tags: filename tokens (minus extension) so search finds "sunset photo.jpg"
+    base=$(basename "$file"); base="${base%.*}"
+    TAGS=$(printf '%s' "$base" | tr '-_.' ',' | tr -cd 'a-zA-Z0-9,')
+    record="{\"cid\":\"$cid\",\"node_id\":\"$NODE_ID\",\"relay_url\":\"$RELAY_URL\",\"title\":\"$title\",\"type\":\"$mime\",\"size_kb\":$size_kb,\"tags\":\"$TAGS\",\"published\":$ts}"
 
     # Post to configured DHT nodes (comma separated). Default: local bootstrap.
     DHT_NODES="${AGENTOS_DHT_NODES:-http://10.0.2.2:8889}"

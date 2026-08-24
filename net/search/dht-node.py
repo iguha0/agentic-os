@@ -90,8 +90,11 @@ class RecordStore:
             if type_filter and not rec.get("type", "").startswith(type_filter):
                 continue
 
-            # Score: count term matches in title + tags
-            text = (rec.get("title", "") + " " + " ".join(rec.get("tags", []))).lower()
+            # Score: count term matches in title + tags (tags may be csv string or list)
+            tags = rec.get("tags", [])
+            if isinstance(tags, str):
+                tags = [t for t in tags.split(",") if t]
+            text = (rec.get("title", "") + " " + " ".join(tags)).lower()
             score = sum(1 for term in query_terms if term in text)
             if score > 0:
                 results.append((score, rec))
