@@ -628,6 +628,7 @@ static void build_prompt(const char *query, char *prompt_out, int prompt_len) {
         "TOOL:net_check                      # diagnose network/AI/search connectivity\n"
         "TOOL:net_search query=<query>       # search the AgentoNet DHT for shared content\n"
         "TOOL:open_share url=<link>          # fetch+decrypt a private share into inbox\n"
+        "TOOL:request_payment amount=<sats> memo=<m>  # get a Lightning invoice (LNURL-pay)\n"
         "TOOL:open_app name=<app-name>\n"
         "TOOL:certify file=<path>\n"
         "TOOL:whoami\n"
@@ -1306,6 +1307,18 @@ static int dispatch_tool(const char *line, char *result, size_t reslen) {
         if (result) strncpy(result, sres, reslen-1);
         return 1;
     }
+    if (strncmp(spec, "request_payment", 15) == 0) {
+        char amount[32], memo[256];
+        PARAM("amount", amount, sizeof(amount));
+        PARAM("memo",   memo,   sizeof(memo));
+        if (!amount[0]) { if (result) snprintf(result, reslen, "request_payment: amount= (sats) required"); return 1; }
+        char cmd[MAX_INPUT + 64];
+        char out[1024] = {0};
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/lnurl-pay request '%s' '%s' 2>&1", amount, memo);
+        run_shell_capture(cmd, out, sizeof(out));
+        if (result) strncpy(result, out, reslen-1);
+        return 1;
+    }
     if (strncmp(spec, "open_share", 10) == 0) {
         char url[1024];
         PARAM("url", url, sizeof(url));
@@ -1855,6 +1868,20 @@ static int handle_builtin(const char *input) {
         tool_net_search(input + 10, NULL, 0);
         return 1;
     }
+    if (strncmp(input, "lightning ", 10) == 0) {
+        char cmd[MAX_INPUT + 32];
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/lnurl-pay %s 2>&1", input + 10);
+        run_shell(cmd);
+        return 1;
+    }
+    if (strncmp(input, "zap ", 4) == 0) {
+        char out[1024] = {0};
+        char cmd[MAX_INPUT + 32];
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/lnurl-pay request '%s' 'agent zap' 2>&1", input + 4);
+        run_shell_capture(cmd, out, sizeof(out));
+        printf("%s\n", out);
+        return 1;
+    }
     if (strncmp(input, "open ", 5) == 0) {
         char out[1024] = {0};
         char cmd[MAX_INPUT + 64];
@@ -1904,6 +1931,20 @@ static int handle_builtin(const char *input) {
         return 1;
     }
     /* Web app shortcuts: "open <appname>" */
+    if (strncmp(input, "lightning ", 10) == 0) {
+        char cmd[MAX_INPUT + 32];
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/lnurl-pay %s 2>&1", input + 10);
+        run_shell(cmd);
+        return 1;
+    }
+    if (strncmp(input, "zap ", 4) == 0) {
+        char out[1024] = {0};
+        char cmd[MAX_INPUT + 32];
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/lnurl-pay request '%s' 'agent zap' 2>&1", input + 4);
+        run_shell_capture(cmd, out, sizeof(out));
+        printf("%s\n", out);
+        return 1;
+    }
     if (strncmp(input, "open ", 5) == 0) {
         char cmd[256];
         snprintf(cmd, sizeof(cmd), "/usr/local/bin/shortcuts.sh open '%s'", input + 5);

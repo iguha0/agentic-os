@@ -388,6 +388,16 @@ I can remember things, browse the web, take notes, share files publicly / with s
         <div class="setting-item"><span class="setting-label">DHT index</span><span class="setting-value">10.0.2.2:8889</span></div>
       </div>
       <div class="settings-section">
+        <h3>⚡ Lightning (LNURL-pay)</h3>
+        <div class="f-row"><input class="f-input" id="ln-addr" placeholder="you@getalby.com"></div>
+        <div class="f-row">
+          <input class="f-input" id="ln-amt" placeholder="sats">
+          <button class="primary-btn" style="width:auto;padding:9px 16px" onclick="lightningSetup()">Save</button>
+          <button class="primary-btn" style="width:auto;padding:9px 16px;background:linear-gradient(135deg,#f7931a,#ffb347);box-shadow:0 5px 16px rgba(247,147,26,.4)" onclick="lightningInvoice()">Get invoice</button>
+        </div>
+        <div class="link-out" id="ln-out"></div>
+      </div>
+      <div class="settings-section">
         <h3>Danger zone</h3>
         <div class="setting-item" onclick="runCmd('reboot')"><span class="setting-label">Reboot device</span><span class="setting-arrow">›</span></div>
       </div>
@@ -622,6 +632,24 @@ function loadSettings(){ refreshStatus(); }
 function runCmd(cmd){
   fetch('/cgi-bin/cmd.sh',{method:'POST',body:JSON.stringify({cmd})})
     .then(r=>r.json()).then(j=>alert(cmd+'\n\n'+(j.output||'done')));
+}
+async function lightningSetup(){
+  const addr = $('ln-addr').value.trim();
+  if(!addr) return;
+  const r = await fetch('/cgi-bin/lightning.sh',{method:'POST',body:'cmd=setup&addr='+encodeURIComponent(addr)});
+  const j = await r.json();
+  $('ln-out').style.display='block'; $('ln-out').textContent = j.output||'saved';
+}
+async function lightningInvoice(){
+  const amt = parseInt($('ln-amt').value||'0');
+  if(amt<1) { $('ln-out').style.display='block'; $('ln-out').textContent='Enter sats first'; return; }
+  $('ln-out').style.display='block'; $('ln-out').textContent='Requesting invoice…';
+  const r = await fetch('/cgi-bin/lightning.sh',{method:'POST',body:'cmd=request&amount='+amt+'&memo=AgenticOS'});
+  const j = await r.json();
+  let html = '';
+  if (j.svg) html += '<div style="background:#fff;padding:8px;border-radius:8px;width:180px">'+j.svg+'</div><br>';
+  html += (j.invoice ? '⚡ '+j.invoice : '✖ '+(j.output||'failed'));
+  $('ln-out').innerHTML = html;
 }
 
 /* boot */

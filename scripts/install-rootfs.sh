@@ -51,6 +51,8 @@ else
     echo "  WARN: prebuilt/agseal missing — private shares will use openssl fallback"
 fi
 
+# lightning tip line on public shares
+true
 echo "[install] web ui..."
 [ -f "$ROOT/usr/local/bin/aghttpd" ] || { echo "ERROR: rootfs/usr/local/bin/aghttpd missing (prebuilt)"; exit 1; }
 cp "$SCRIPT_DIR/../ui/home.html"     "$UI/home.html"

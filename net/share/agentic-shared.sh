@@ -174,6 +174,7 @@ cmd_share() {
             echo ""
             echo "Share link:"
             echo "  $RELAY_URL/f/$NODE_ID/pub/$cid/$fname"
+            /usr/local/bin/lnurl-pay tip-url "$cid" 2>/dev/null || true
             echo ""
             echo "CID: $cid"
             ;;

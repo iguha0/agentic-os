@@ -117,6 +117,9 @@ apk add --root /rootfs --no-cache \
 # the ephemeral build container and never bloat the image.
 apk add --no-cache \
     python3 \
+    py3-qrcode \
+    py3-pil \
+    py3-setuptools \
     py3-pip \
     git \
     build-base \
