@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Agentic OS</title>
+<style>
+:root {
+  --bg:         #0a0a0f;
+  --bg2:        #12121a;
+  --bg3:        #1a1a26;
+  --surface:    #1e1e2e;
+  --surface2:   #252538;
+  --border:     #2a2a40;
+  --accent:     #7c3aed;
+  --accent2:    #a855f7;
+  --accent3:    #c084fc;
+  --green:      #22c55e;
+  --red:        #ef4444;
+  --yellow:     #eab308;
+  --blue:       #3b82f6;
+  --text:       #e2e8f0;
+  --text2:      #94a3b8;
+  --text3:      #64748b;
+  --user-msg:   #4c1d95;
+  --ai-msg:     #1e1e2e;
+  --radius:     16px;
+  --radius-sm:  8px;
+  --shadow:     0 8px 32px rgba(0,0,0,0.6);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100vw; height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Wallpaper ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(168,85,247,0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(59,130,246,0.08) 0%, transparent 50%),
+    var(--bg);
+  pointer-events: none;
+}
+
+/* ── Status Bar ── */
+#statusbar {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 32px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  background: rgba(10,10,15,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  z-index: 100;
+  font-size: 12px; font-weight: 600;
+}
+#statusbar .left  { display: flex; gap: 8px; align-items: center; }
+#statusbar .right { display: flex; gap: 12px; align-items: center; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.status-dot.offline { background: var(--red); }
+#clock { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+#ai-status { font-size: 11px; color: var(--text2); }
+
+/* ── Main layout ── */
+#main {
+  position: fixed; inset: 32px 0 80px 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* ── Screens ── */
+.screen {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+.screen.active { display: flex; }
+
+/* ── CHAT SCREEN ── */
+#chat-screen { background: transparent; }
+
+#chat-header {
+  padding: 14px 20px 10px;
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(18,18,26,0.5);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.ai-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(124,58,237,0.4);
+}
+.ai-info h3 { font-size: 15px; font-weight: 600; }
+.ai-info p  { font-size: 11px; color: var(--text2); margin-top: 1px; }
+
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px 8px;
+  display: flex; flex-direction: column; gap: 12px;
+  scroll-behavior: smooth;
+}
+#messages::-webkit-scrollbar { width: 3px; }
+#messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.msg {
+  max-width: 80%; display: flex; flex-direction: column; gap: 4px;
+  animation: msgIn 0.25s ease;
+}
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.ai   { align-self: flex-start; align-items: flex-start; }
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 14px; line-height: 1.5;
+  word-break: break-word;
+}
+.msg.user .bubble {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-bottom-right-radius: 4px;
+  color: #fff;
+}
+.msg.ai .bubble {
+  background: var(--surface);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.bubble.typing { display: flex; gap: 5px; align-items: center; padding: 14px 18px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
+
+.msg-time { font-size: 10px; color: var(--text3); padding: 0 4px; }
+
+#chat-input-area {
+  padding: 12px 16px 14px;
+  background: rgba(18,18,26,0.7);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex; gap: 10px; align-items: flex-end;
+}
+#chat-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 18px;
+  outline: none;
+  resize: none;
+  max-height: 120px; min-height: 44px;
+  line-height: 1.4;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+#chat-input:focus { border-color: var(--accent); }
+#chat-input::placeholder { color: var(--text3); }
+
+#send-btn {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; cursor: pointer; color: #fff; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, opacity 0.15s;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.5);
+}
+#send-btn:hover  { transform: scale(1.08); }
+#send-btn:active { transform: scale(0.95); opacity: 0.8; }
+#send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.quick-actions {
+  display: flex; gap: 8px; padding: 6px 16px 0;
+  overflow-x: auto;
+}
+.quick-actions::-webkit-scrollbar { display: none; }
+.qa-btn {
+  white-space: nowrap; padding: 5px 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; color: var(--text2); font-size: 12px;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.qa-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── APP GRID SCREEN ── */
+#apps-screen {
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(30px);
+  padding: 20px 16px;
+  overflow-y: auto;
+}
+#apps-screen h2 {
+  font-size: 22px; font-weight: 700; margin-bottom: 8px;
+  background: linear-gradient(135deg, #fff, var(--accent3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+#app-search {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 14px;
+  padding: 10px 16px; outline: none; margin-bottom: 20px;
+  font-family: inherit;
+}
+#app-search:focus { border-color: var(--accent); }
+#app-search::placeholder { color: var(--text3); }
+
+.app-section { margin-bottom: 24px; }
+.app-section h3 { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.app-icon {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.app-icon:hover  { transform: scale(1.08); }
+.app-icon:active { transform: scale(0.95); }
+.app-icon-img {
+  width: 60px; height: 60px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.app-icon span { font-size: 11px; color: var(--text2); text-align: center; line-height: 1.2; }
+
+/* ── FILES SCREEN ── */
+#files-screen { background: var(--bg2); }
+#files-header {
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+#files-header h2 { font-size: 18px; font-weight: 700; flex: 1; }
+#file-path {
+  font-size: 12px; color: var(--text3); padding: 6px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+#file-list { flex: 1; overflow-y: auto; padding: 8px; }
+.file-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 0.15s;
+}
+.file-item:hover { background: var(--surface); }
+.file-icon { font-size: 24px; width: 32px; text-align: center; flex-shrink: 0; }
+.file-info { flex: 1; }
+.file-name { font-size: 14px; }
+.file-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.file-action { color: var(--text3); font-size: 18px; padding: 4px 8px; }
+
+/* ── SETTINGS SCREEN ── */
+#settings-screen { background: var(--bg2); padding: 20px 16px; overflow-y: auto; }
+#settings-screen h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+.settings-section { margin-bottom: 24px; }
+.settings-section h3 { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+.setting-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--surface); border-radius: var(--radius-sm);
+  margin-bottom: 2px;
+}
+.setting-item:first-of-type { border-radius: var(--radius) var(--radius) var(--radius-sm) var(--radius-sm); }
+.setting-item:last-of-type  { border-radius: var(--radius-sm) var(--radius-sm) var(--radius) var(--radius); }
+.setting-label { font-size: 14px; }
+.setting-value { font-size: 13px; color: var(--text2); }
+.setting-arrow { color: var(--text3); }
+
+/* ── Bottom Nav ── */
+#navbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: 80px;
+  background: rgba(14,14,20,0.85);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 8px 16px;
+  z-index: 100;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 16px; border-radius: var(--radius);
+  cursor: pointer; transition: all 0.2s; position: relative;
+  min-width: 64px;
+}
+.nav-item:hover { background: rgba(255,255,255,0.05); }
+.nav-item.active { color: var(--accent3); }
+.nav-item:not(.active) { color: var(--text3); }
+.nav-icon { font-size: 22px; line-height: 1; }
+.nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
+.nav-item.active .nav-icon {
+  filter: drop-shadow(0 0 8px rgba(192,132,252,0.8));
+}
+.nav-pip {
+  position: absolute; top: 4px; right: 14px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent2);
+  display: none;
+}
+.nav-pip.show { display: block; }
+
+/* ── Notification toast ── */
+#toast {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 10px 20px; border-radius: 24px;
+  font-size: 13px; color: var(--text);
+  box-shadow: var(--shadow);
+  z-index: 200; pointer-events: none;
+  transition: opacity 0.3s;
+  opacity: 0;
+}
+#toast.show { opacity: 1; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Welcome overlay ── */
+#welcome {
+  position: fixed; inset: 0; z-index: 300;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 24px;
+  transition: opacity 0.5s;
+}
+#welcome.gone { opacity: 0; pointer-events: none; }
+.welcome-logo {
+  width: 100px; height: 100px; border-radius: 28px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2), #60a5fa);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 52px;
+  box-shadow: 0 0 60px rgba(124,58,237,0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{box-shadow:0 0 40px rgba(124,58,237,0.4)} 50%{box-shadow:0 0 80px rgba(124,58,237,0.8)} }
+.welcome-logo.ready { animation: none; box-shadow: 0 0 40px rgba(34,197,94,0.6); background: linear-gradient(135deg, #166534, var(--green)); }
+#welcome h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+#welcome p  { font-size: 15px; color: var(--text2); }
+#welcome-status { font-size: 13px; color: var(--text3); }
+</style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div id="welcome">
+  <div class="welcome-logo" id="wlogo">🤖</div>
+  <h1>Agentic OS</h1>
+  <p>Your AI-powered home screen</p>
+  <div id="welcome-status">Starting up...</div>
+</div>
+
+<!-- Status Bar -->
+<div id="statusbar">
+  <div class="left">
+    <span id="clock">00:00</span>
+    <div class="status-dot" id="net-dot"></div>
+    <span id="ai-status">AI offline</span>
+  </div>
+  <div class="right">
+    <span id="node-id" style="color:var(--text3);font-size:10px"></span>
+    <span>📶</span>
+    <span>🔋</span>
+  </div>
+</div>
+
+<!-- Main content area -->
+<div id="main">
+
+  <!-- CHAT SCREEN -->
+  <div class="screen active" id="chat-screen">
+    <div id="chat-header">
+      <div class="ai-avatar">🤖</div>
+      <div class="ai-info">
+        <h3>Agentic AI</h3>
+        <p id="model-name">Connecting...</p>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <button class="qa-btn" onclick="quickAsk('What can you do?')">💡 What can you do?</button>
+      <button class="qa-btn" onclick="quickAsk('Show my notes')">📝 Notes</button>
+      <button class="qa-btn" onclick="quickAsk('What is the weather today?')">🌤 Weather</button>
+      <button class="qa-btn" onclick="quickAsk('Search for latest AI news')">🔍 Search</button>
+      <button class="qa-btn" onclick="quickAsk('Tell me something interesting')">✨ Surprise me</button>
+    </div>
+    <div id="messages">
+      <div class="msg ai">
+        <div class="bubble">
+          Hello! I'm your AI assistant running locally on Agentic OS.<br><br>
+          I can remember things, search the web, take notes, share files, certify your content, and much more.<br><br>
+          What would you like to do? 👋
+        </div>
+        <span class="msg-time" id="first-msg-time"></span>
+      </div>
+    </div>
+    <div id="chat-input-area">
+      <textarea id="chat-input" placeholder="Type a message..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMessage()" title="Send">➤</button>
+    </div>
+  </div>
+
+  <!-- APPS SCREEN -->
+  <div class="screen" id="apps-screen">
+    <h2>Apps</h2>
+    <input type="text" id="app-search" placeholder="🔍  Search apps..." oninput="filterApps(this.value)">
+    <div id="app-grid-container"></div>
+  </div>
+
+  <!-- FILES SCREEN -->
+  <div class="screen" id="files-screen">
+    <div id="files-header">
+      <span style="font-size:22px">📁</span>
+      <h2>Files</h2>
+      <button onclick="loadFiles('/')" style="background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px">Root</button>
+    </div>
+    <div id="file-path">/</div>
+    <div id="file-list"><div style="padding:24px;text-align:center;color:var(--text3)">Loading...</div></div>
+  </div>
+
+  <!-- SETTINGS SCREEN -->
+  <div class="screen" id="settings-screen">
+    <h2>Settings</h2>
+    <div class="settings-section">
+      <h3>Identity</h3>
+      <div class="setting-item"><span class="setting-label">Node ID</span><span class="setting-value" id="s-node-id">—</span></div>
+      <div class="setting-item"><span class="setting-label">Username</span><span class="setting-value" id="s-username">user</span></div>
+    </div>
+    <div class="settings-section">
+      <h3>AI Engine</h3>
+      <div class="setting-item"><span class="setting-label">llama-server</span><span class="setting-value" id="s-llm">127.0.0.1:8080</span></div>
+      <div class="setting-item"><span class="setting-label">Model</span><span class="setting-value" id="s-model">Qwen2.5 1.5B</span></div>
+      <div class="setting-item"><span class="setting-label">Status</span><span class="setting-value" id="s-status">—</span></div>
+    </div>
+    <div class="settings-section">
+      <h3>Network</h3>
+      <div class="setting-item"><span class="setting-label">Gateway</span><span class="setting-value">10.0.2.2</span></div>
+      <div class="setting-item"><span class="setting-label">IP</span><span class="setting-value">10.0.2.15</span></div>
+    </div>
+    <div class="settings-section">
+      <h3>Content</h3>
+      <div class="setting-item" onclick="runCmd('nostr status')"><span class="setting-label">Nostr Status</span><span class="setting-arrow">›</span></div>
+      <div class="setting-item" onclick="runCmd('lightning status')"><span class="setting-label">Lightning</span><span class="setting-arrow">›</span></div>
+    </div>
+    <div class="settings-section">
+      <h3>System</h3>
+      <div class="setting-item" onclick="if(confirm('Reboot?'))runCmd('reboot')">
+        <span class="setting-label" style="color:var(--yellow)">Reboot</span><span class="setting-arrow">›</span>
+      </div>
+      <div class="setting-item" onclick="if(confirm('Shutdown?'))runCmd('shutdown')">
+        <span class="setting-label" style="color:var(--red)">Shutdown</span><span class="setting-arrow">›</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Navigation -->
+<div id="navbar">
+  <div class="nav-item active" id="nav-chat" onclick="switchScreen('chat')">
+    <div class="nav-icon">💬</div>
+    <div class="nav-label">AI</div>
+  </div>
+  <div class="nav-item" id="nav-apps" onclick="switchScreen('apps')">
+    <div class="nav-icon">⚡</div>
+    <div class="nav-label">Apps</div>
+  </div>
+  <div class="nav-item" id="nav-files" onclick="switchScreen('files')">
+    <div class="nav-icon">📂</div>
+    <div class="nav-label">Files</div>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="switchScreen('settings')">
+    <div class="nav-icon">⚙️</div>
+    <div class="nav-label">Settings</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const API = 'http://localhost:7080/cgi-bin';
+let aiOnline   = false;
+let currentPath = '/';
+let chatHistory = [];  // [{role, content}]
+
+// ── Clock ───────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+  document.getElementById('first-msg-time').textContent =
+    h + ':' + m;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Toast ───────────────────────────────────────────────────────────────────
+function toast(msg, ms=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+// ── Screen switching ─────────────────────────────────────────────────────────
+function switchScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(name + '-screen').classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+
+  if (name === 'apps')     loadApps();
+  if (name === 'files')    loadFiles(currentPath);
+  if (name === 'settings') loadSettings();
+}
+
+// ── AI Chat ─────────────────────────────────────────────────────────────────
+function addMsg(role, text) {
+  const msgs = document.getElementById('messages');
+  const now  = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  const div  = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `
+    <div class="bubble">${text.replace(/\n/g,'<br>')}</div>
+    <span class="msg-time">${time}</span>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing-indicator';
+  div.innerHTML = '<div class="bubble typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function hideTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const btn   = document.getElementById('send-btn');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  input.value = ''; input.style.height = 'auto';
+  btn.disabled = true;
+  addMsg('user', text);
+  chatHistory.push({role:'user', content: text});
+
+  showTyping();
+  try {
+    const resp = await fetch(API + '/ai.sh', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: text, history: chatHistory.slice(-10)})
+    });
+    hideTyping();
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const reply = data.reply || data.error || 'No response';
+    addMsg('ai', reply);
+    chatHistory.push({role:'assistant', content: reply});
+  } catch(e) {
+    hideTyping();
+    if (!aiOnline) {
+      addMsg('ai', '⚠️ AI is offline.\n\nMake sure llama-server is running on your Mac:\n<code>llama-server -m /path/to/model.gguf --host 0.0.0.0 --port 8080</code>');
+    } else {
+      addMsg('ai', '⚠️ Error: ' + e.message);
+    }
+  }
+  btn.disabled = false;
+  input.focus();
+}
+
+function quickAsk(text) {
+  document.getElementById('chat-input').value = text;
+  sendMessage();
+  switchScreen('chat');
+}
+
+// Auto-resize textarea
+document.getElementById('chat-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+document.getElementById('chat-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// ── Run a shell command via API ──────────────────────────────────────────────
+async function runCmd(cmd) {
+  try {
+    const r = await fetch(API + '/cmd.sh', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({cmd})
+    });
+    const d = await r.json();
+    toast(d.output ? d.output.slice(0,60) : 'Done');
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+// ── Apps Screen ──────────────────────────────────────────────────────────────
+const BUILTIN_APPS = [
+  { name:'YouTube',   icon:'▶',  color:'#dc2626', url:'https://m.youtube.com' },
+  { name:'Netflix',   icon:'N',  color:'#dc2626', url:'https://www.netflix.com' },
+  { name:'Gmail',     icon:'✉',  color:'#2563eb', url:'https://mail.google.com' },
+  { name:'Maps',      icon:'📍', color:'#16a34a', url:'https://maps.google.com' },
+  { name:'Spotify',   icon:'♪',  color:'#16a34a', url:'https://open.spotify.com' },
+  { name:'Reddit',    icon:'🔴', color:'#ea580c', url:'https://old.reddit.com' },
+  { name:'Twitter',   icon:'🐦', color:'#0284c7', url:'https://mobile.twitter.com' },
+  { name:'GitHub',    icon:'⚙',  color:'#374151', url:'https://github.com' },
+  { name:'Wikipedia', icon:'W',  color:'#374151', url:'https://en.m.wikipedia.org' },
+  { name:'News',      icon:'📰', color:'#1d4ed8', url:'https://news.google.com' },
+  { name:'WhatsApp',  icon:'💬', color:'#16a34a', url:'https://web.whatsapp.com' },
+  { name:'Telegram',  icon:'✈',  color:'#0284c7', url:'https://web.telegram.org' },
+  { name:'Amazon',    icon:'🛒', color:'#d97706', url:'https://www.amazon.com' },
+  { name:'Flipkart',  icon:'🛒', color:'#2563eb', url:'https://www.flipkart.com' },
+  { name:'Zomato',    icon:'🍔', color:'#dc2626', url:'https://www.zomato.com' },
+  { name:'Swiggy',    icon:'🍔', color:'#d97706', url:'https://www.swiggy.com' },
+  { name:'IRCTC',     icon:'🚂', color:'#1d4ed8', url:'https://m.irctc.co.in' },
+  { name:'Paytm',     icon:'💳', color:'#1d4ed8', url:'https://paytm.com' },
+  { name:'Translate', icon:'🌐', color:'#2563eb', url:'https://translate.google.com' },
+  { name:'Calendar',  icon:'📅', color:'#dc2626', url:'https://calendar.google.com' },
+  { name:'Drive',     icon:'💾', color:'#d97706', url:'https://drive.google.com' },
+  { name:'Weather',   icon:'☁',  color:'#0284c7', url:'https://wttr.in' },
+  { name:'HN',        icon:'🟠', color:'#c2410c', url:'https://news.ycombinator.com' },
+  { name:'DDG',       icon:'🔍', color:'#de5833', url:'https://lite.duckduckgo.com/lite/' },
+];
+
+let allApps = [...BUILTIN_APPS];
+
+function renderApps(apps) {
+  const container = document.getElementById('app-grid-container');
+  if (!apps.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text3);padding:24px">No apps found</div>';
+    return;
+  }
+  container.innerHTML = `
+    <div class="app-section">
+      <div class="app-grid">
+        ${apps.map(app => `
+          <div class="app-icon" onclick="openApp('${app.url}','${app.name}')">
+            <div class="app-icon-img" style="background:${app.color}20;border:1px solid ${app.color}40">
+              <span style="color:${app.color}">${app.icon}</span>
+            </div>
+            <span>${app.name}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function loadApps() { renderApps(allApps); }
+function filterApps(q) {
+  if (!q) { renderApps(allApps); return; }
+  renderApps(allApps.filter(a => a.name.toLowerCase().includes(q.toLowerCase())));
+}
+
+function openApp(url, name) {
+  toast('Opening ' + name + '...');
+  // Navigate in the current tab/window to avoid spawning multiple Chromium processes/windows.
+  // The main agent GUI (this chat/home) stays the primary interface.
+  // For separate web flows, the agent shell can use browser-ctl (CDP) to drive navigation in the background or new tabs if supported.
+  window.location.href = url;
+}
+
+// ── Files Screen ──────────────────────────────────────────────────────────────
+const FILE_ICONS = {
+  dir:   '📁',
+  txt:   '📄', md: '📄', sh: '⚙', py: '🐍', js: '📜', html: '🌐',
+  json:  '{}', conf: '⚙', log: '📋',
+  jpg: '🖼', jpeg: '🖼', png: '🖼', gif: '🖼', svg: '🖼',
+  mp3: '🎵', wav: '🎵', ogg: '🎵', flac: '🎵',
+  mp4: '🎬', mkv: '🎬', avi: '🎬', webm: '🎬',
+  pdf: '📕', zip: '📦', gz: '📦', tar: '📦',
+  gguf: '🤖', bin: '⬛',
+};
+
+function fileIcon(name, isDir) {
+  if (isDir) return FILE_ICONS.dir;
+  const ext = name.split('.').pop().toLowerCase();
+  return FILE_ICONS[ext] || '📄';
+}
+
+async function loadFiles(path) {
+  currentPath = path;
+  document.getElementById('file-path').textContent = path;
+  const list = document.getElementById('file-list');
+  list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3)">Loading...</div>';
+
+  try {
+    const r = await fetch(API + '/files.sh?path=' + encodeURIComponent(path));
+    const data = await r.json();
+    if (data.error) { list.innerHTML = `<div style="padding:24px;color:var(--red)">${data.error}</div>`; return; }
+
+    const items = data.files || [];
+    if (!items.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3)">(empty)</div>';
+      return;
+    }
+
+    list.innerHTML = items.map(f => `
+      <div class="file-item" onclick="${f.type==='dir' ? `loadFiles('${f.path}')` : `fileAction('${f.path}','${f.name}')`}">
+        <div class="file-icon">${fileIcon(f.name, f.type==='dir')}</div>
+        <div class="file-info">
+          <div class="file-name">${f.name}</div>
+          <div class="file-meta">${f.type==='dir' ? 'Directory' : (f.size||'')}</div>
+        </div>
+        <div class="file-action">${f.type==='dir' ? '›' : '⋯'}</div>
+      </div>
+    `).join('');
+
+    // Add back button
+    if (path !== '/') {
+      const parent = path.replace(/\/[^/]+\/?$/, '') || '/';
+      list.insertAdjacentHTML('afterbegin', `
+        <div class="file-item" onclick="loadFiles('${parent}')">
+          <div class="file-icon">⬆️</div>
+          <div class="file-info"><div class="file-name">.. (up)</div></div>
+        </div>
+      `);
+    }
+  } catch(e) {
+    list.innerHTML = `<div style="padding:24px;color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function fileAction(path, name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const isMedia = ['mp3','wav','ogg','flac','mp4','mkv','webm','avi'].includes(ext);
+  const isImg   = ['jpg','jpeg','png','gif','svg','webp'].includes(ext);
+  const isText  = ['txt','md','sh','py','js','json','html','conf','log'].includes(ext);
+
+  if (isMedia) {
+    const url = API.replace('/cgi-bin','') + '/media/' + path;
+    toast('Opening media player...');
+    window.open(url, '_blank');
+  } else if (isImg) {
+    window.open(API.replace('/cgi-bin','') + '/file/' + path, '_blank');
+  } else if (isText) {
+    viewFile(path, name);
+  } else {
+    if (confirm('Share "' + name + '" publicly?')) {
+      runCmd('share ' + path + ' public').then(() => toast('Shared!'));
+    }
+  }
+}
+
+async function viewFile(path, name) {
+  try {
+    const r = await fetch(API + '/read.sh?path=' + encodeURIComponent(path));
+    const d = await r.json();
+    const content = d.content || d.error;
+    // Show in chat
+    quickAsk('Summarize or explain this file:\n\n' + content.slice(0, 2000));
+    switchScreen('chat');
+  } catch(e) { toast('Cannot read file'); }
+}
+
+// ── Settings ─────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const r = await fetch(API + '/status.sh');
+    const d = await r.json();
+    document.getElementById('s-node-id').textContent  = (d.node_id||'—').slice(0,12)+'...';
+    document.getElementById('s-username').textContent = d.username || 'user';
+    document.getElementById('s-status').textContent   = d.llm_online ? '🟢 Online' : '🔴 Offline';
+    document.getElementById('s-model').textContent    = d.model || 'Qwen2.5 1.5B';
+  } catch(e) {}
+}
+
+// ── Startup ───────────────────────────────────────────────────────────────────
+async function checkAI() {
+  try {
+    const r = await fetch(API + '/status.sh', {signal: AbortSignal.timeout(5000)});
+    const d = await r.json();
+    aiOnline = d.llm_online;
+    const dot = document.getElementById('net-dot');
+    const lbl = document.getElementById('ai-status');
+    if (aiOnline) {
+      dot.className = 'status-dot';
+      lbl.textContent = (d.model||'AI') + ' ready';
+      lbl.style.color = 'var(--green)';
+    } else {
+      dot.className = 'status-dot offline';
+      lbl.textContent = 'AI offline';
+      lbl.style.color = 'var(--red)';
+    }
+    document.getElementById('node-id').textContent = (d.node_id||'').slice(0,8);
+    document.getElementById('model-name').textContent = aiOnline ? (d.model||'Qwen2.5') + ' ✓' : 'Offline — check model disk';
+  } catch(e) {
+    aiOnline = false;
+    document.getElementById('net-dot').className = 'status-dot offline';
+    document.getElementById('ai-status').textContent = 'AI offline';
+  }
+}
+
+// Boot sequence
+async function boot() {
+  const ws = document.getElementById('welcome-status');
+  const wl = document.getElementById('wlogo');
+
+  ws.textContent = 'Loading identity...';
+  await new Promise(r => setTimeout(r, 600));
+
+  ws.textContent = 'Connecting to AI...';
+  await checkAI();
+  await new Promise(r => setTimeout(r, 400));
+
+  ws.textContent = aiOnline ? '✓ AI connected' : '⚠ AI offline (start llama-server)';
+  wl.className = 'welcome-logo ' + (aiOnline ? 'ready' : '');
+  wl.textContent = aiOnline ? '✓' : '🤖';
+
+  await new Promise(r => setTimeout(r, 800));
+  document.getElementById('welcome').classList.add('gone');
+
+  // Poll AI status every 30s
+  setInterval(checkAI, 30000);
+}
+
+boot();
+</script>
+</body>
+</html>

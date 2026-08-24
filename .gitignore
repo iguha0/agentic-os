@@ -1,0 +1,39 @@
+# ── Large artifacts / disk images / models ─────────────────
+*.img
+*.gguf
+*.cpio
+vmlinuz
+vmlinuz.old
+
+# ── Generated rootfs trees ─────────────────────────────────
+rootfs/
+rootfs-graphical/
+rootfs_extracted/
+rootfs.tar.gz
+
+# ── Build outputs ──────────────────────────────────────────
+build/
+build-llama-server-aarch64/
+build-llama-server-aarch64-opt/
+build-llama-server-aarch64-os/
+tmp-modules/
+
+# ── Downloaded toolchain bits ──────────────────────────────
+sysroot/
+modules/
+musl.apk
+musl-dev.apk
+
+# ── Compiled binaries ──────────────────────────────────────
+shell/agentic-shell
+shell2/agentic-shell2
+browser/agbrowser
+ui/aghttpd
+
+# ── Logs & runtime junk ────────────────────────────────────
+qemu.log
+qemu-errors.log
+qemu-graphical-errors.log
+*.log
+.DS_Store
+__pycache__/
