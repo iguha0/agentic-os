@@ -313,6 +313,12 @@ I can remember things, browse the web, take notes, share files publicly / with s
     </div>
     <div id="share-body">
       <div class="form-card">
+        <h3>🔓 Open a received private share</h3>
+        <div class="f-row"><input class="f-input" id="sh-open-link" placeholder="http://relay/f/node/prv/cid/file.enc"></div>
+        <button class="primary-btn" style="background:linear-gradient(135deg,#0891b2,#22d3ee);box-shadow:0 5px 16px rgba(34,211,238,.35)" onclick="openReceived()">Fetch &amp; decrypt to inbox</button>
+        <div class="link-out" id="sh-open-out"></div>
+      </div>
+      <div class="form-card">
         <h3>Share a file from this device</h3>
         <div class="f-row"><input class="f-input" id="sh-file" placeholder="/path/to/file"></div>
         <div class="f-row">
@@ -526,6 +532,19 @@ async function loadAccess(cid) {
     const last = (d.entries||'').split('|').filter(Boolean).pop() || 'no accesses yet';
     el.innerHTML += `<br>⚡ ${d.count} access(es). Latest: ${last}`;
   } catch(e) { el.innerHTML += '<br>⚡ log unavailable'; }
+}
+async function openReceived() {
+  const link = $('sh-open-link').value.trim();
+  const out = $('sh-open-out');
+  if (!link) { out.style.display='block'; out.textContent='Paste the private share link first'; return; }
+  out.style.display = 'block';
+  out.textContent = 'Fetching and decrypting…';
+  try {
+    const r = await fetch('/cgi-bin/share_open.sh', {method:'POST', body:'url='+encodeURIComponent(link)});
+    const j = await r.json();
+    out.textContent = j.ok ? ('🔓 Decrypted → ' + j.path) : ('✖ ' + (j.error||'failed'));
+    if (j.ok) loadShares();
+  } catch(e) { out.textContent = '✖ ' + e.message; }
 }
 async function createShare() {
   const file = $('sh-file').value.trim();

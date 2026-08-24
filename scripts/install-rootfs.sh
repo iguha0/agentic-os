@@ -25,6 +25,8 @@ install_sh "$SCRIPT_DIR/../net/share/agentic-shared.sh" agentic-shared
 install_sh "$SCRIPT_DIR/../net/share/share-tools.sh"   share-tools
 install_sh "$SCRIPT_DIR/../net/share/e2e-encrypt.sh"   e2e-encrypt
 install_sh "$SCRIPT_DIR/../net/share/agtunnel.sh"      agtunnel
+install_sh "$SCRIPT_DIR/../net/share/share-open.sh"    share-open
+cp "$SCRIPT_DIR/../net/share/open.sh" "$LOCAL/open"; chmod 755 "$LOCAL/open"
 install_sh "$SCRIPT_DIR/../identity/gen-identity.sh"   gen-identity
 install_sh "$SCRIPT_DIR/../identity/certify.sh"        certify
 install_sh "$SCRIPT_DIR/../identity/certify-verify.sh" certify-verify

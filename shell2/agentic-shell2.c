@@ -627,6 +627,7 @@ static void build_prompt(const char *query, char *prompt_out, int prompt_len) {
         "TOOL:web_read url=<url>             # fetch a result page and read its text\n"
         "TOOL:net_check                      # diagnose network/AI/search connectivity\n"
         "TOOL:net_search query=<query>       # search the AgentoNet DHT for shared content\n"
+        "TOOL:open_share url=<link>          # fetch+decrypt a private share into inbox\n"
         "TOOL:open_app name=<app-name>\n"
         "TOOL:certify file=<path>\n"
         "TOOL:whoami\n"
@@ -1305,6 +1306,17 @@ static int dispatch_tool(const char *line, char *result, size_t reslen) {
         if (result) strncpy(result, sres, reslen-1);
         return 1;
     }
+    if (strncmp(spec, "open_share", 10) == 0) {
+        char url[1024];
+        PARAM("url", url, sizeof(url));
+        if (!url[0]) { if (result) snprintf(result, reslen, "open_share: url= required"); return 1; }
+        char cmd[MAX_INPUT + 64];
+        char out[1024] = {0};
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/share-open '%s' 2>&1", url);
+        run_shell_capture(cmd, out, sizeof(out));
+        if (result) strncpy(result, out, reslen-1);
+        return 1;
+    }
     if (strncmp(spec, "share", 5) == 0) {
         char file[512], mode[32], recipients[256];
         PARAM("file",       file,       sizeof(file));
@@ -1841,6 +1853,14 @@ static int handle_builtin(const char *input) {
     }
     if (strncmp(input, "netsearch ", 10) == 0) {
         tool_net_search(input + 10, NULL, 0);
+        return 1;
+    }
+    if (strncmp(input, "open ", 5) == 0) {
+        char out[1024] = {0};
+        char cmd[MAX_INPUT + 64];
+        snprintf(cmd, sizeof(cmd), "/usr/local/bin/share-open '%s' 2>&1", input + 5);
+        run_shell_capture(cmd, out, sizeof(out));
+        printf("%s\n", out);
         return 1;
     }
     if (strcmp(input, "netsearch") == 0) {

@@ -18,6 +18,9 @@ LLAMA_SERVER_PATH=""
 
 echo "[agentic-init] booting..."
 
+# Make our tools resolvable everywhere (PID1 default PATH lacks /usr/local/bin)
+export PATH="/usr/local/bin:/usr/bin:/bin:/sbin:/usr/sbin"
+
 # Mount pseudo-filesystems. Tolerate "already mounted" / missing devtmpfs
 # so this can be re-run safely during debugging.
 mount -t proc none /proc 2>/dev/null
