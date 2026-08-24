@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic OS — the home screen is an agent</title>
+<meta name="description" content="An open-source, AI-first operating system that boots in QEMU. On-device LLM, self-sovereign sharing (public/restricted/E2E), DHT search, Lightning tips, real Nostr. AGPL-3.0.">
+<meta property="og:title" content="Agentic OS — the home screen is an agent">
+<meta property="og:description" content="Open-source AI-first OS. Your phone becomes a server: E2E-encrypted sharing, DHT search, Lightning tips, Nostr-verified. AGPL-3.0.">
+<meta property="og:image" content="screenshot-home.png">
+<style>
+:root{
+  --bg:#07070c; --surface:rgba(30,30,46,.72); --border:rgba(255,255,255,.08);
+  --accent:#7c3aed; --accent2:#a855f7; --cyan:#22d3ee; --green:#22c55e;
+  --text:#e8ecf4; --text2:#94a3b8; --text3:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+  overflow-x:hidden; line-height:1.6;
+}
+body::before{content:'';position:fixed;inset:0;z-index:-1;
+  background:radial-gradient(ellipse at 20% 0%,rgba(124,58,237,.25) 0%,transparent 55%),
+             radial-gradient(ellipse at 85% 90%,rgba(34,211,238,.12) 0%,transparent 50%);}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.7);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border)}
+nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
+nav .logo{font-weight:800;font-size:16px;letter-spacing:.5px}
+nav .logo span{color:var(--accent2)}
+nav a.item{color:var(--text2);font-size:13.5px}
+nav .cta{margin-left:auto;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;padding:8px 18px;border-radius:20px;font-weight:700;font-size:13px}
+nav .cta:hover{text-decoration:none;filter:brightness(1.1)}
+
+/* hero */
+header{padding:96px 0 70px;text-align:center}
+h1{font-size:clamp(34px,6vw,62px);font-weight:800;line-height:1.12;letter-spacing:-1px}
+h1 .grad{background:linear-gradient(180deg,#fff,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.tagline{color:var(--text2);font-size:clamp(15px,2.4vw,20px);margin-top:18px}
+.badges{display:flex;gap:10px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+.badge{font-size:12px;padding:6px 14px;border-radius:20px;background:var(--surface);
+  border:1px solid var(--border);color:var(--text2)}
+.badge b{color:var(--green)}
+.hero-btns{display:flex;gap:14px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+.btn{padding:13px 26px;border-radius:14px;font-weight:700;font-size:14.5px}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+  box-shadow:0 8px 24px rgba(124,58,237,.45)}
+.btn.ghost{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn:hover{text-decoration:none;filter:brightness(1.08)}
+
+/* shot */
+.shot{margin:26px auto 0;max-width:900px;border-radius:18px;border:1px solid var(--border);
+  box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 6px rgba(124,58,237,.08);overflow:hidden}
+.shot img{display:block;width:100%}
+.caption{text-align:center;color:var(--text3);font-size:12.5px;margin-top:12px}
+
+/* sections */
+section{padding:74px 0}
+h2{font-size:clamp(24px,3.6vw,34px);text-align:center;margin-bottom:10px}
+.sub{text-align:center;color:var(--text2);max-width:640px;margin:0 auto 44px;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;
+  transition:transform .15s ease,border-color .15s ease}
+.card:hover{transform:translateY(-3px);border-color:rgba(168,85,247,.4)}
+.card .ico{font-size:28px}
+.card h3{font-size:16px;margin:10px 0 6px}
+.card p{font-size:13.5px;color:var(--text2)}
+
+/* quickstart */
+.code{background:#0d0d16;border:1px solid var(--border);border-radius:14px;padding:20px 22px;
+  font-family:ui-monospace,Menlo,monospace;font-size:13px;overflow-x:auto;max-width:720px;margin:0 auto}
+.code .c{color:var(--text3)} .code .p{color:var(--cyan)}
+.code div{white-space:pre}
+
+/* table */
+table{width:100%;border-collapse:collapse;max-width:760px;margin:0 auto}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13.5px}
+td:first-child{color:var(--text2);width:40%}
+td:last-child{font-family:ui-monospace,monospace}
+
+footer{border-top:1px solid var(--border);padding:34px 0;text-align:center;color:var(--text3);font-size:12.5px}
+footer a{color:var(--text2)}
+@media(max-width:640px){nav .item{display:none}}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <div class="logo">Agentic<span>OS</span></div>
+  <a class="item" href="#features">Features</a>
+  <a class="item" href="#agentonet">AgentoNet</a>
+  <a class="item" href="#quickstart">Quickstart</a>
+  <a class="item" href="https://github.com/iguha0/agentic-os">GitHub</a>
+  <a class="cta" href="https://github.com/iguha0/agentic-os/releases/tag/v0.3.0-beta">Download β</a>
+</div></nav>
+
+<header class="wrap">
+  <h1>The home screen is <span class="grad">an agent</span>.<br>The phone is <span class="grad">a server</span>.</h1>
+  <p class="tagline">An open-source, AI-first operating system. On-device LLM. No cloud. No systemd.<br>Share anything — publicly, restricted, or end-to-end encrypted — straight from your device.</p>
+  <div class="badges">
+    <span class="badge"><b>●</b> AGPL-3.0</span>
+    <span class="badge">aarch64 · QEMU</span>
+    <span class="badge">Qwen2.5 on-device</span>
+    <span class="badge">v0.3.0-beta</span>
+  </div>
+  <div class="hero-btns">
+    <a class="btn primary" href="https://github.com/iguha0/agentic-os/releases/tag/v0.3.0-beta">Download v0.3.0-beta</a>
+    <a class="btn ghost" href="https://github.com/iguha0/agentic-os">Source on GitHub</a>
+  </div>
+  <div class="shot"><img src="screenshot-home.png" alt="Agentic OS home screen — app grid, dock, agent status"></div>
+  <div class="caption">Real screenshot — Agentic OS graphical mode, booted in QEMU.</div>
+</header>
+
+<section id="features" class="wrap">
+  <h2>An OS where software <span style="color:var(--accent2)">obeys intent</span></h2>
+  <p class="sub">A custom init replaces systemd. The shell talks. The agent runs tools, remembers, browses, and acts — all locally.</p>
+  <div class="grid">
+    <div class="card"><div class="ico">🤖</div><h3>Agent shell</h3><p>Multi-turn LLM with tool use: memory, notes, alarms, web search, page reading. Tools can create new tools.</p></div>
+    <div class="card"><div class="ico">🧠</div><h3>On-device AI</h3><p>Qwen2.5-1.5B via llama-server inside the guest. RAG-injected memory. Works offline. Your prompts never leave the machine.</p></div>
+    <div class="card"><div class="ico">🌐</div><h3>Browser automation</h3><p>Chromium kiosk + CDP: the agent navigates, clicks, fills forms — using <i>your</i> logged-in sessions, which persist across reboots.</p></div>
+    <div class="card"><div class="ico">⚡</div><h3>Lightning receive</h3><p>Full LNURL-pay: lightning address → BOLT11 invoice. <code>zap 100</code>. Tip links on public shares.</p></div>
+    <div class="card"><div class="ico">🛰️</div><h3>Nostr-native</h3><p>Pure BIP340 Schnorr signing. Posts accepted by live relays — verified, fetchable by anyone.</p></div>
+    <div class="card"><div class="ico">🛍️</div><h3>Apps & Store</h3><p>Turn any site into a home-screen app backed by its session. Browse the F-Droid catalogue, pull APKs to your inbox.</p></div>
+  </div>
+</section>
+
+<section id="agentonet" style="background:rgba(124,58,237,.05);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="wrap">
+    <h2>🪐 AgentoNet — <span style="color:var(--cyan)">your device is the server</span></h2>
+    <p class="sub">Content never leaves your hands. A relay is a blind pipe. The index stores metadata, never files. Three sharing modes, one link format.</p>
+    <div class="grid">
+      <div class="card"><div class="ico">🌐</div><h3>Public</h3><p>Content-addressed links (sha256 CIDs), discoverable in the DHT index. Anyone with the link fetches from <i>your</i> device through the relay.</p></div>
+      <div class="card"><div class="ico">🎟️</div><h3>Restricted</h3><p>Per-person tokens with expiry and download caps. "Share with Rahul until Friday, max 3 downloads." Revocable anytime.</p></div>
+      <div class="card"><div class="ico">🔐</div><h3>Private</h3><p>E2E via libsodium sealed boxes (X25519 + XSalsa20-Poly1305). Only the recipient's key can open. The relay sees ciphertext.</p></div>
+    </div>
+    <p class="sub" style="margin-top:30px">Verified end-to-end: <b>two independent devices</b> discovered each other via DHT and transferred content through the relay.</p>
+  </div>
+</section>
+
+<section id="quickstart" class="wrap">
+  <h2>Boot it in 3 commands</h2>
+  <p class="sub">Requires <code>qemu-system-aarch64</code> (brew install qemu). macOS gets HVF acceleration automatically.</p>
+  <div class="code">
+<div><span class="c"># 1. download the text bundle from releases</span></div>
+<div><span class="p">unzip</span> agentic-os-0.3.0-beta-text.zip -d agentic-os <span class="p">&&</span> <span class="p">cd</span> agentic-os</div>
+<div> </div>
+<div><span class="c"># 2. fetch the model (Apache-2.0) + build the model disk</span></div>
+<div><span class="p">./download-model.sh</span></div>
+<div> </div>
+<div><span class="c"># 3. boot — the agent is your shell</span></div>
+<div><span class="p">./test-interactive.sh</span></div>
+  </div>
+  <p class="sub" style="margin-top:22px">Inside: <code>!net</code> diagnostics · <code>search</code> · <code>netsearch</code> · <code>open &lt;link&gt;</code> · <code>zap 100</code> · <code>help</code></p>
+
+  <table style="margin-top:44px">
+    <tr><td>Text bundle (~26 MB)</td><td><a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/agentic-os-0.3.0-beta-text.zip">agentic-os-0.3.0-beta-text.zip</a></td></tr>
+    <tr><td>Graphical image (~332 MB)</td><td><a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/agentic-os-0.3.0-beta-graphical.zip">agentic-os-0.3.0-beta-graphical.zip</a></td></tr>
+    <tr><td>Checksums</td><td><a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/SHA256SUMS.txt">SHA256SUMS.txt</a></td></tr>
+  </table>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b>Agentic OS</b> · AGPL-3.0 · built by <a href="https://github.com/iguha0">@iguha0</a></p>
+    <p style="margin-top:6px">relay.dynalora.com · dht.dynalora.com — coming online</p>
+  </div>
+</footer>
+
+</body>
+</html>
