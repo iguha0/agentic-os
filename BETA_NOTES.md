@@ -117,3 +117,10 @@ netsearch photos         # search shared content
 | Nostr post accepted by 6 live relays + fetch-back | PASS |
 | Lightning invoice via getalby LNURLp (host + in-guest zap) | PASS |
 | App create/list round-trip + F-Droid live search in-guest | PASS |
+
+---
+
+## License
+
+Agentic OS — Copyright (C) Indrajit Guha — **AGPL-3.0** (see [LICENSE](LICENSE)).
+Model weights (Qwen2.5) are Apache-2.0, fetched separately via `download-model.sh`.
