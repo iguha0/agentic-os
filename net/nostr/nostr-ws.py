@@ -27,16 +27,21 @@ import base64
 import os
 import time
 
-NOSTR_DIR = "/usr/share/agentic/nostr"
+NOSTR_DIR = os.environ.get("AGENTIC_NOSTR_DIR", "/usr/share/agentic/nostr")
 QUEUE_FILE = os.path.join(NOSTR_DIR, "queue.jsonl")
 PUBLISHED_FILE = os.path.join(NOSTR_DIR, "published.jsonl")
 FAILED_FILE = os.path.join(NOSTR_DIR, "failed.jsonl")
 
+_ID_DIR = os.environ.get("AGENTIC_IDENTITY_DIR", "/usr/share/agentic/identity")
+
 RELAYS = [
-    "wss://relay.damus.io",
     "wss://nos.lol",
-    "wss://relay.nostr.band",
-    "wss://nostr.wine",
+    "wss://relay.primal.net",
+    "wss://offchain.pub",
+    "wss://nostr.mom",
+    "wss://relay.snort.social",
+    "wss://nostr-pub.wellorder.net",
+    "wss://atlas.nostr.land",
 ]
 
 # ── Minimal WebSocket client (no external deps) ────────────────────────────────
@@ -69,13 +74,45 @@ def ws_connect(url, timeout=10):
         host, port_s = host.rsplit(":", 1)
         port = int(port_s)
 
-    sock = socket.create_connection((host, port), timeout=timeout)
+    def _tls_ctx():
+        try:
+            return ssl.create_default_context()
+        except Exception:
+            pass
+
+    def _connect_tls():
+        attempts = []
+        ctx = ssl.create_default_context()
+        attempts.append(("system-ca", ctx))
+        try:
+            import certifi
+            attempts.append(("certifi", ssl.create_default_context(cafile=certifi.where())))
+        except Exception:
+            pass
+        attempts.append(("unverified", ssl._create_unverified_context()))
+        last_err = None
+        for label, ctx in attempts:
+            s = None
+            try:
+                s = socket.create_connection((host, port), timeout=timeout)
+                conn = ctx.wrap_socket(s, server_hostname=host)
+                if label == "unverified":
+                    print("  [nostr] WARNING: TLS verification disabled (no CA chain)", flush=True)
+                return conn
+            except ssl.SSLCertVerificationError as e:
+                last_err = e
+                if s:
+                    try: s.close()
+                    except Exception: pass
+                continue
+            except Exception:
+                raise
+        raise last_err if last_err else RuntimeError("tls failed")
 
     if scheme == "wss":
-        ctx = ssl.create_default_context()
-        conn = ctx.wrap_socket(sock, server_hostname=host)
+        conn = _connect_tls()
     else:
-        conn = sock
+        conn = socket.create_connection((host, port), timeout=timeout)
 
     # WebSocket HTTP upgrade
     key = ws_handshake_key()
@@ -203,6 +240,67 @@ def publish_to_relay(relay_url, event_json, timeout=10):
         ws_close(conn)
         return False, f"send failed: {e}"
 
+# ── Real Nostr identity + event signing (BIP340 / NIP-01) ──────────────────────
+
+import sys as _sys
+_sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import bip340
+
+NOSTR_KEY_FILE = os.path.join(_ID_DIR, "nostr.key")   # 32B hex secp256k1 sk
+NOSTR_PUB_FILE = os.path.join(_ID_DIR, "nostr.pub")   # x-only hex pubkey
+
+def ensure_nostr_identity():
+    """Load or create the device's Nostr (secp256k1) identity. Returns (sk, pk) hex."""
+    if os.path.exists(NOSTR_KEY_FILE) and os.path.exists(NOSTR_PUB_FILE):
+        with open(NOSTR_KEY_FILE) as f: sk_hex = f.read().strip()
+        with open(NOSTR_PUB_FILE) as f: pk_hex = f.read().strip()
+        return sk_hex, pk_hex
+
+    os.makedirs(os.path.dirname(NOSTR_KEY_FILE), exist_ok=True)
+    while True:
+        sk = os.urandom(32)
+        try:
+            pk = bip340.pubkey_gen(sk)
+            break
+        except ValueError:
+            continue
+    sk_hex, pk_hex = sk.hex(), pk.hex()
+    with open(NOSTR_KEY_FILE, "w") as f: f.write(sk_hex)
+    os.chmod(NOSTR_KEY_FILE, 0o600)
+    with open(NOSTR_PUB_FILE, "w") as f: f.write(pk_hex)
+    print(f"[nostr] generated nostr identity: {pk_hex[:16]}…")
+    return sk_hex, pk_hex
+
+def make_event(kind: int, content: str, tags: list) -> dict:
+    """Build a canonical NIP-01 event: id = sha256 of the exact serialization."""
+    sk_hex, pk_hex = ensure_nostr_identity()
+    created_at = int(time.time())
+    serial = json.dumps([0, pk_hex, created_at, kind, tags, content],
+                        separators=(",", ":"), ensure_ascii=False)
+    eid = hashlib.sha256(serial.encode()).hexdigest()
+    aux = os.urandom(32)
+    sig = bip340.schnorr_sign(bytes.fromhex(eid), bytes.fromhex(sk_hex), aux)
+    return {
+        "id": eid,
+        "pubkey": pk_hex,
+        "created_at": created_at,
+        "kind": kind,
+        "tags": tags,
+        "content": content,
+        "sig": sig.hex(),
+    }
+
+def cmd_post(text: str) -> bool:
+    """Sign+publish a kind-1 text note with the real nostr identity."""
+    event = make_event(1, text, [["t", "agentic-os"]])
+    print(f"[nostr] event {event['id'][:16]}… pub {event['pubkey'][:16]}…")
+    ok = cmd_publish(json.dumps(event))
+    if ok:
+        os.makedirs(NOSTR_DIR, exist_ok=True)
+        with open(PUBLISHED_FILE, "a") as f:
+            f.write(json.dumps(event) + "\n")
+    return ok
+
 # ── Commands ───────────────────────────────────────────────────────────────────
 
 def cmd_publish(event_json_str):
@@ -317,6 +415,30 @@ if __name__ == "__main__":
 
     elif cmd == "status":
         cmd_status()
+
+    elif cmd == "post":
+        text = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else ""
+        if not text:
+            print("Usage: nostr-ws.py post '<text>'")
+            sys.exit(1)
+        ok = cmd_post(text)
+        sys.exit(0 if ok else 1)
+
+    elif cmd == "profile":
+        content = sys.argv[2] if len(sys.argv) > 2 else '{"name":"Agentic OS User"}'
+        event = make_event(0, content, [])
+        print(f"[nostr] profile event {event['id'][:16]}…")
+        ok = cmd_publish(json.dumps(event))
+        if ok:
+            os.makedirs(NOSTR_DIR, exist_ok=True)
+            with open(PUBLISHED_FILE, "a") as f:
+                f.write(json.dumps(event) + "\n")
+        sys.exit(0 if ok else 1)
+
+    elif cmd == "keygen" or cmd == "key":
+        sk_hex, pk_hex = ensure_nostr_identity()
+        print(f"pubkey: {pk_hex}")
+        print("npub-style (bech32 not required for relays): n/a")
 
     else:
         print(f"unknown command: {cmd}")

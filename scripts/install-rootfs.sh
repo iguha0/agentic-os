@@ -34,6 +34,8 @@ install_sh "$SCRIPT_DIR/../identity/credentials.sh"    credentials
 install_sh "$SCRIPT_DIR/../learning/learn-profile.sh"  learn-profile
 install_sh "$SCRIPT_DIR/../apps/shortcuts.sh"          shortcuts
 install_sh "$SCRIPT_DIR/../net/nostr/nostr-publish.sh" nostr-publish
+cp "$SCRIPT_DIR/../net/nostr/nostr-ws.py"   "$LOCAL/nostr-ws.py";  chmod 755 "$LOCAL/nostr-ws.py"
+cp "$SCRIPT_DIR/../net/nostr/bip340.py"     "$LOCAL/bip340.py";    chmod 644 "$LOCAL/bip340.py"
 install_sh "$SCRIPT_DIR/../net/lightning/lnurl-pay.sh" lnurl-pay
 install_sh "$SCRIPT_DIR/../net/search/distributed-search.sh" distributed-search
 
