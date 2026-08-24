@@ -3,173 +3,360 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agentic OS — the home screen is an agent</title>
-<meta name="description" content="An open-source, AI-first operating system that boots in QEMU. On-device LLM, self-sovereign sharing (public/restricted/E2E), DHT search, Lightning tips, real Nostr. AGPL-3.0.">
-<meta property="og:title" content="Agentic OS — the home screen is an agent">
-<meta property="og:description" content="Open-source AI-first OS. Your phone becomes a server: E2E-encrypted sharing, DHT search, Lightning tips, Nostr-verified. AGPL-3.0.">
+<title>PryzentOS — the home screen is an agent</title>
+<meta name="description" content="An open-source AI-first operating system. On-device LLM, self-sovereign sharing, DHT search, Lightning, Nostr. AGPL-3.0.">
+<meta property="og:title" content="PryzentOS — the home screen is an agent. The phone is a server.">
+<meta property="og:description" content="Open-source AI-first OS. E2E-encrypted sharing from your device, DHT search, Lightning tips, Nostr-native. AGPL-3.0.">
 <meta property="og:image" content="screenshot-home.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#07070c; --surface:rgba(30,30,46,.72); --border:rgba(255,255,255,.08);
-  --accent:#7c3aed; --accent2:#a855f7; --cyan:#22d3ee; --green:#22c55e;
-  --text:#e8ecf4; --text2:#94a3b8; --text3:#64748b;
+  --bg:#08080d; --bg2:#0b0b12; --ink:#e9edf4; --ink2:#9aa4b5; --ink3:#5b6577;
+  --line:rgba(233,237,244,.09); --line2:rgba(233,237,244,.16);
+  --violet:#8b5cf6; --violet2:#a78bfa; --green:#3ddc84; --amber:#f5b83d;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --grot:'Space Grotesk',-apple-system,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
+::selection{background:var(--violet);color:#fff}
 html{scroll-behavior:smooth}
-body{
-  background:var(--bg); color:var(--text);
-  font-family:-apple-system,'SF Pro Display','Segoe UI',system-ui,sans-serif;
-  overflow-x:hidden; line-height:1.6;
-}
-body::before{content:'';position:fixed;inset:0;z-index:-1;
-  background:radial-gradient(ellipse at 20% 0%,rgba(124,58,237,.25) 0%,transparent 55%),
-             radial-gradient(ellipse at 85% 90%,rgba(34,211,238,.12) 0%,transparent 50%);}
-a{color:var(--accent2);text-decoration:none}
-a:hover{text-decoration:underline}
-.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+body{background:var(--bg);color:var(--ink);font-family:var(--grot);font-size:15.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1140px;margin:0 auto;padding:0 clamp(20px,4vw,48px)}
+.mono{font-family:var(--mono)}
+code{font-family:var(--mono);font-size:.9em;color:var(--violet2)}
 
-/* nav */
-nav{position:sticky;top:0;z-index:10;background:rgba(7,7,12,.7);backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border)}
-nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
-nav .logo{font-weight:800;font-size:16px;letter-spacing:.5px}
-nav .logo span{color:var(--accent2)}
-nav a.item{color:var(--text2);font-size:13.5px}
-nav .cta{margin-left:auto;background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;padding:8px 18px;border-radius:20px;font-weight:700;font-size:13px}
-nav .cta:hover{text-decoration:none;filter:brightness(1.1)}
+/* ── nav ── */
+nav{position:sticky;top:0;z-index:50;background:rgba(8,8,13,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+nav .in{max-width:1140px;margin:0 auto;padding:0 clamp(20px,4vw,48px);height:58px;display:flex;align-items:center;gap:26px}
+.wordmark{font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.06em}
+.wordmark em{font-style:normal;color:var(--violet2)}
+nav .ver{font-family:var(--mono);font-size:10.5px;color:var(--ink3);border:1px solid var(--line2);padding:2px 8px;border-radius:4px}
+nav .sp{flex:1}
+nav a.l{font-family:var(--mono);font-size:12px;color:var(--ink2);letter-spacing:.04em}
+nav a.l:hover{color:var(--ink)}
+nav .dl{font-family:var(--mono);font-size:12px;font-weight:700;color:#0b0b12;background:var(--ink);padding:7px 14px;border-radius:6px}
+nav .dl:hover{background:var(--violet2)}
 
-/* hero */
-header{padding:96px 0 70px;text-align:center}
-h1{font-size:clamp(34px,6vw,62px);font-weight:800;line-height:1.12;letter-spacing:-1px}
-h1 .grad{background:linear-gradient(180deg,#fff,#a78bfa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.tagline{color:var(--text2);font-size:clamp(15px,2.4vw,20px);margin-top:18px}
-.badges{display:flex;gap:10px;justify-content:center;margin-top:26px;flex-wrap:wrap}
-.badge{font-size:12px;padding:6px 14px;border-radius:20px;background:var(--surface);
-  border:1px solid var(--border);color:var(--text2)}
-.badge b{color:var(--green)}
-.hero-btns{display:flex;gap:14px;justify-content:center;margin-top:34px;flex-wrap:wrap}
-.btn{padding:13px 26px;border-radius:14px;font-weight:700;font-size:14.5px}
-.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
-  box-shadow:0 8px 24px rgba(124,58,237,.45)}
-.btn.ghost{background:var(--surface);border:1px solid var(--border);color:var(--text)}
-.btn:hover{text-decoration:none;filter:brightness(1.08)}
+/* ── hero ── */
+.hero{padding:clamp(56px,9vh,110px) 0 0;display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(28px,5vw,72px);align-items:center}
+.kick{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;color:var(--ink3);text-transform:uppercase;margin-bottom:26px;display:flex;align-items:center;gap:10px}
+.kick::before{content:'';width:26px;height:1px;background:var(--violet)}
+h1{font-size:clamp(40px,5.4vw,74px);line-height:1.02;font-weight:700;letter-spacing:-.035em}
+h1 .dim{color:var(--ink3)}
+.lede{margin-top:26px;max-width:46ch;color:var(--ink2);font-size:clamp(15px,1.5vw,17px)}
+.lede b{color:var(--ink);font-weight:500}
+.actions{display:flex;gap:12px;margin-top:36px;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:13px;font-weight:700;padding:13px 22px;border-radius:8px;display:inline-block}
+.btn.p{background:var(--ink);color:#0a0a10}
+.btn.p:hover{background:var(--violet2)}
+.btn.g{border:1px solid var(--line2);color:var(--ink2)}
+.btn.g:hover{border-color:var(--violet);color:var(--ink)}
+.statline{margin-top:30px;font-family:var(--mono);font-size:11.5px;color:var(--ink3);display:flex;flex-direction:column;gap:6px}
+.statline .ok{color:var(--green)}
+.statline .ok::before{content:'●';margin-right:8px;font-size:8px;vertical-align:2px}
+.phone{position:relative}
+.phone img{width:100%;display:block;border-radius:22px;border:1px solid var(--line2);
+  box-shadow:0 50px 120px rgba(0,0,0,.65),0 0 0 8px rgba(139,92,246,.05)}
+.phone::after{content:'';position:absolute;inset:-1px;border-radius:22px;
+  background:linear-gradient(160deg,rgba(139,92,246,.14),transparent 40%);pointer-events:none}
+.shotcap{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-top:14px;letter-spacing:.05em}
 
-/* shot */
-.shot{margin:26px auto 0;max-width:900px;border-radius:18px;border:1px solid var(--border);
-  box-shadow:0 30px 80px rgba(0,0,0,.6), 0 0 0 6px rgba(124,58,237,.08);overflow:hidden}
-.shot img{display:block;width:100%}
-.caption{text-align:center;color:var(--text3);font-size:12.5px;margin-top:12px}
+/* ── bootlog band ── */
+.bootlog{margin-top:clamp(56px,9vh,96px);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:var(--bg2);overflow:hidden}
+.bootlog .in{max-width:1140px;margin:0 auto;padding:18px clamp(20px,4vw,48px);
+  font-family:var(--mono);font-size:11.5px;color:var(--ink3);white-space:nowrap;overflow-x:auto}
+.bootlog .t{color:var(--violet2)} .bootlog .ok{color:var(--green)}
 
-/* sections */
-section{padding:74px 0}
-h2{font-size:clamp(24px,3.6vw,34px);text-align:center;margin-bottom:10px}
-.sub{text-align:center;color:var(--text2);max-width:640px;margin:0 auto 44px;font-size:15px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:24px;
-  transition:transform .15s ease,border-color .15s ease}
-.card:hover{transform:translateY(-3px);border-color:rgba(168,85,247,.4)}
-.card .ico{font-size:28px}
-.card h3{font-size:16px;margin:10px 0 6px}
-.card p{font-size:13.5px;color:var(--text2)}
+/* ── section chrome ── */
+section{padding:clamp(64px,10vh,120px) 0}
+.shead{display:flex;align-items:baseline;gap:18px;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:8px}
+.snum{font-family:var(--mono);font-size:12px;color:var(--violet2)}
+.stitle{font-size:clamp(22px,3vw,32px);font-weight:700;letter-spacing:-.02em}
+.sdesc{color:var(--ink2);max-width:60ch;margin:18px 0 0;font-size:15px}
+
+/* capability rows */
+.rows{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:70px 1fr 1.1fr;gap:clamp(16px,3vw,40px);
+  padding:26px 0;border-bottom:1px solid var(--line);align-items:start}
+.row .n{font-family:var(--mono);font-size:12px;color:var(--ink3);padding-top:5px}
+.row h3{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.row h3 .tag{font-family:var(--mono);font-size:10px;color:var(--violet2);border:1px solid rgba(139,92,246,.35);
+  padding:2px 7px;border-radius:4px;margin-left:10px;vertical-align:3px;letter-spacing:.08em}
+.row p{color:var(--ink2);font-size:14px}
+.row .artifact{font-family:var(--mono);font-size:11.5px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:8px;padding:14px 16px;color:var(--ink2);overflow-x:auto;white-space:pre;line-height:1.75}
+.row .artifact .g{color:var(--green)} .row .artifact .v{color:var(--violet2)} .row .artifact .d{color:var(--ink3)}
+
+/* agentonet transcript */
+.term{background:#07070c;border:1px solid var(--line2);border-radius:12px;overflow:hidden;margin-top:26px}
+.term .bar{display:flex;align-items:center;gap:7px;padding:11px 16px;border-bottom:1px solid var(--line)}
+.term .bar i{width:10px;height:10px;border-radius:50%;background:var(--line2)}
+.term .bar i:first-child{background:#ff5f57}.term .bar i:nth-child(2){background:#febc2e}.term .bar i:nth-child(3){background:#28c840}
+.term .bar span{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-left:8px;letter-spacing:.08em}
+.term pre{padding:20px 22px;font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--ink2);overflow-x:auto}
+.term .p{color:var(--violet2)} .term .g{color:var(--green)} .term .r{color:#ff6b6b} .term .y{color:var(--amber)} .term .d{color:var(--ink3)}
+
+/* modes dl */
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:26px}
+.mode{padding:26px;border-right:1px solid var(--line)}
+.mode:last-child{border-right:none}
+.mode .k{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--violet2)}
+.mode h3{font-size:17px;margin:10px 0 8px}
+.mode p{font-size:13px;color:var(--ink2)}
+.mode .l{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-top:14px;word-break:break-all}
+
+/* proof */
+.proof{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pf{background:var(--bg);padding:26px}
+.pf .big{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--ink)}
+.pf .big span{color:var(--violet2)}
+.pf .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-top:6px}
+.pf p{font-size:12.5px;color:var(--ink2);margin-top:12px;font-family:var(--mono)}
 
 /* quickstart */
-.code{background:#0d0d16;border:1px solid var(--border);border-radius:14px;padding:20px 22px;
-  font-family:ui-monospace,Menlo,monospace;font-size:13px;overflow-x:auto;max-width:720px;margin:0 auto}
-.code .c{color:var(--text3)} .code .p{color:var(--cyan)}
-.code div{white-space:pre}
+.qs{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,4vw,56px);align-items:start}
+.dls{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.dls a{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px}
+.dls a:last-child{border-bottom:none}
+.dls a:hover{background:var(--bg2)}
+.dls .sz{color:var(--ink3);font-size:11px}
+.dls .arrow{color:var(--violet2)}
 
-/* table */
-table{width:100%;border-collapse:collapse;max-width:760px;margin:0 auto}
-td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13.5px}
-td:first-child{color:var(--text2);width:40%}
-td:last-child{font-family:ui-monospace,monospace}
+footer{border-top:1px solid var(--line);padding:44px 0 60px;margin-top:clamp(64px,10vh,120px)}
+footer .in{max-width:1140px;margin:0 auto;padding:0 clamp(20px,4vw,48px);
+  display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:2}
+footer b{color:var(--ink2);font-weight:500}
+footer a{color:var(--ink2)} footer a:hover{color:var(--violet2)}
 
-footer{border-top:1px solid var(--border);padding:34px 0;text-align:center;color:var(--text3);font-size:12.5px}
-footer a{color:var(--text2)}
-@media(max-width:640px){nav .item{display:none}}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr;gap:10px}
+  .modes,.proof,.qs{grid-template-columns:1fr}
+  .mode{border-right:none;border-bottom:1px solid var(--line)}
+  nav a.l{display:none}
+}
 </style>
 </head>
 <body>
 
-<nav><div class="wrap">
-  <div class="logo">Agentic<span>OS</span></div>
-  <a class="item" href="#features">Features</a>
-  <a class="item" href="#agentonet">AgentoNet</a>
-  <a class="item" href="#quickstart">Quickstart</a>
-  <a class="item" href="https://github.com/iguha0/agentic-os">GitHub</a>
-  <a class="cta" href="https://github.com/iguha0/agentic-os/releases/tag/v0.3.0-beta">Download β</a>
+<nav><div class="in">
+  <div class="wordmark">PRYZENT<em>/OS</em></div>
+  <span class="ver">v0.3.0-beta</span>
+  <div class="sp"></div>
+  <a class="l" href="#agent">AGENT</a>
+  <a class="l" href="#agentonet">AGENTONET</a>
+  <a class="l" href="#proof">PROOF</a>
+  <a class="l" href="https://github.com/iguha0/agentic-os">SOURCE</a>
+  <a class="dl" href="https://github.com/iguha0/agentic-os/releases/tag/v0.3.0-beta">GET THE BETA ↓</a>
 </div></nav>
 
-<header class="wrap">
-  <h1>The home screen is <span class="grad">an agent</span>.<br>The phone is <span class="grad">a server</span>.</h1>
-  <p class="tagline">An open-source, AI-first operating system. On-device LLM. No cloud. No systemd.<br>Share anything — publicly, restricted, or end-to-end encrypted — straight from your device.</p>
-  <div class="badges">
-    <span class="badge"><b>●</b> AGPL-3.0</span>
-    <span class="badge">aarch64 · QEMU</span>
-    <span class="badge">Qwen2.5 on-device</span>
-    <span class="badge">v0.3.0-beta</span>
+<header class="wrap hero">
+  <div>
+    <div class="kick">PryzentOS · build 0.3.0-beta · AGPL-3.0 · aarch64</div>
+    <h1>The home screen<br>is <span style="color:var(--violet2)">an agent.</span><br>
+        <span class="dim">The phone is<br>a server.</span></h1>
+    <p class="lede">An operating system built from scratch around one idea: <b>software should obey intent.</b>
+    A local LLM lives on the device. Sharing is self-sovereign — public, restricted, or end-to-end
+    encrypted, straight from your hardware. No cloud in the loop. No systemd either.</p>
+    <div class="actions">
+      <a class="btn p" href="https://github.com/iguha0/agentic-os/releases/tag/v0.3.0-beta">GET THE BETA ↓</a>
+      <a class="btn g" href="https://github.com/iguha0/agentic-os">READ THE SOURCE</a>
+    </div>
+    <div class="statline">
+      <span class="ok">llama-server ready on 127.0.0.1:8080 — Qwen2.5-1.5B, on-device</span>
+      <span class="ok">agentonet tunnel up · node 71d8f0b2 · relay reachable</span>
+      <span>No cloud. No telemetry. Your prompts never leave the machine.</span>
+    </div>
   </div>
-  <div class="hero-btns">
-    <a class="btn primary" href="https://github.com/iguha0/agentic-os/releases/tag/v0.3.0-beta">Download v0.3.0-beta</a>
-    <a class="btn ghost" href="https://github.com/iguha0/agentic-os">Source on GitHub</a>
+  <div class="phone">
+    <img src="screenshot-home.png" alt="PryzentOS home screen — app grid, dock, agent status">
+    <div class="shotcap">FIG. 01 — PryzentOS graphical mode, live in QEMU. Not a mockup.</div>
   </div>
-  <div class="shot"><img src="screenshot-home.png" alt="Agentic OS home screen — app grid, dock, agent status"></div>
-  <div class="caption">Real screenshot — Agentic OS graphical mode, booted in QEMU.</div>
 </header>
 
-<section id="features" class="wrap">
-  <h2>An OS where software <span style="color:var(--accent2)">obeys intent</span></h2>
-  <p class="sub">A custom init replaces systemd. The shell talks. The agent runs tools, remembers, browses, and acts — all locally.</p>
-  <div class="grid">
-    <div class="card"><div class="ico">🤖</div><h3>Agent shell</h3><p>Multi-turn LLM with tool use: memory, notes, alarms, web search, page reading. Tools can create new tools.</p></div>
-    <div class="card"><div class="ico">🧠</div><h3>On-device AI</h3><p>Qwen2.5-1.5B via llama-server inside the guest. RAG-injected memory. Works offline. Your prompts never leave the machine.</p></div>
-    <div class="card"><div class="ico">🌐</div><h3>Browser automation</h3><p>Chromium kiosk + CDP: the agent navigates, clicks, fills forms — using <i>your</i> logged-in sessions, which persist across reboots.</p></div>
-    <div class="card"><div class="ico">⚡</div><h3>Lightning receive</h3><p>Full LNURL-pay: lightning address → BOLT11 invoice. <code>zap 100</code>. Tip links on public shares.</p></div>
-    <div class="card"><div class="ico">🛰️</div><h3>Nostr-native</h3><p>Pure BIP340 Schnorr signing. Posts accepted by live relays — verified, fetchable by anyone.</p></div>
-    <div class="card"><div class="ico">🛍️</div><h3>Apps & Store</h3><p>Turn any site into a home-screen app backed by its session. Browse the F-Droid catalogue, pull APKs to your inbox.</p></div>
-  </div>
-</section>
+<div class="bootlog"><div class="in">
+<span class="t">[    0.000]</span> PRYZENTOS 0.3.0-beta — custom init, no systemd &nbsp;&nbsp;
+<span class="t">[    2.218]</span> model ready: Qwen2.5-1.5B-Instruct (1,117,320,736 bytes) from /dev/vda &nbsp;&nbsp;
+<span class="t">[    2.299]</span> <span class="ok">llama-server ready on 127.0.0.1:8080</span> &nbsp;&nbsp;
+<span class="t">[    2.412]</span> <span class="ok">agentonet tunnel up · relay=10.0.2.2:7075</span> &nbsp;&nbsp;
+<span class="t">[    3.104]</span> <span class="ok">Chromium kiosk focused — home screen is the agent</span>
+</div></div>
 
-<section id="agentonet" style="background:rgba(124,58,237,.05);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
-  <div class="wrap">
-    <h2>🪐 AgentoNet — <span style="color:var(--cyan)">your device is the server</span></h2>
-    <p class="sub">Content never leaves your hands. A relay is a blind pipe. The index stores metadata, never files. Three sharing modes, one link format.</p>
-    <div class="grid">
-      <div class="card"><div class="ico">🌐</div><h3>Public</h3><p>Content-addressed links (sha256 CIDs), discoverable in the DHT index. Anyone with the link fetches from <i>your</i> device through the relay.</p></div>
-      <div class="card"><div class="ico">🎟️</div><h3>Restricted</h3><p>Per-person tokens with expiry and download caps. "Share with Rahul until Friday, max 3 downloads." Revocable anytime.</p></div>
-      <div class="card"><div class="ico">🔐</div><h3>Private</h3><p>E2E via libsodium sealed boxes (X25519 + XSalsa20-Poly1305). Only the recipient's key can open. The relay sees ciphertext.</p></div>
+<!-- ═══ 01 THE AGENT ═══ -->
+<section id="agent" class="wrap">
+  <div class="shead"><span class="snum">01</span><span class="stitle">The agent is the interface</span></div>
+  <p class="sdesc">There is no app launcher to hunt through and no settings maze. You state intent;
+  the agent — running entirely on the device — picks tools, chains actions, and reports back.
+  These are its load-bearing pieces.</p>
+  <div class="rows">
+    <div class="row">
+      <div class="n">/01</div>
+      <div><h3>Local inference <span class="tag">NO CLOUD</span></h3>
+        <p>Qwen2.5-1.5B served by llama.cpp inside the guest. Conversation, memory (RAG-injected),
+        notes, alarms — everything computed locally. Pull the network cable; it keeps working.</p></div>
+      <div class="artifact"><span class="d">$ inside the OS:</span>
+> <span class="v">weather mumbai</span>
+Mumbai: 🌦️ +28°C
+> <span class="v">remember my name is Indrajit</span>
+memory saved</div>
     </div>
-    <p class="sub" style="margin-top:30px">Verified end-to-end: <b>two independent devices</b> discovered each other via DHT and transferred content through the relay.</p>
+    <div class="row">
+      <div class="n">/02</div>
+      <div><h3>Tool dispatch <span class="tag">SELF-EXTENDING</span></h3>
+        <p>The model emits structured tool calls — search, read pages, drive the browser over CDP,
+        share files, sign events. <code>TOOL:create_tool</code> lets it write new tools at runtime.
+        The agent grows its own surface area.</p></div>
+      <div class="artifact"><span class="d">$ grammar the LLM sees:</span>
+TOOL:search query=…
+TOOL:web_read url=…
+TOOL:browser_ctl cmd=click selector=…
+TOOL:share file=… mode=private
+TOOL:create_tool name=… script=…</div>
+    </div>
+    <div class="row">
+      <div class="n">/03</div>
+      <div><h3>Sessions that persist <span class="tag">ACTS FOR YOU</span></h3>
+        <p>The kiosk browser keeps one profile across reboots. Log into any site once; the agent can
+        then operate it on your behalf — book, fill, post. Any site becomes a home-screen app with
+        one tap.</p></div>
+      <div class="artifact"><span class="d">$ you:</span> log into the railway site once
+<span class="d">$ agent, later:</span>
+TOOL:browser_ctl cmd=navigate url=…
+TOOL:browser_ctl cmd=click selector=#book
+<span class="g">→ ticket reserved using your session</span></div>
+    </div>
+    <div class="row">
+      <div class="n">/04</div>
+      <div><h3>Real search, layered</h3>
+        <p>On-device SearXNG (multi-engine) when available; rotating-UA scrapers and Wikipedia
+        merge as fallback. Plus <code>netsearch</code> — a second engine indexing only what
+        people chose to share on AgentoNet.</p></div>
+      <div class="artifact"><span class="d">$ netsearch goa sunset</span>
+agentonet search 'goa sunset' — 1 result:
+1. goademo-2026-beta.jpg
+   agento://55987cad…/82a27d2e… (image/jpeg)
+   via relay</div>
+    </div>
   </div>
 </section>
 
-<section id="quickstart" class="wrap">
-  <h2>Boot it in 3 commands</h2>
-  <p class="sub">Requires <code>qemu-system-aarch64</code> (brew install qemu). macOS gets HVF acceleration automatically.</p>
-  <div class="code">
-<div><span class="c"># 1. download the text bundle from releases</span></div>
-<div><span class="p">unzip</span> agentic-os-0.3.0-beta-text.zip -d agentic-os <span class="p">&&</span> <span class="p">cd</span> agentic-os</div>
-<div> </div>
-<div><span class="c"># 2. fetch the model (Apache-2.0) + build the model disk</span></div>
-<div><span class="p">./download-model.sh</span></div>
-<div> </div>
-<div><span class="c"># 3. boot — the agent is your shell</span></div>
-<div><span class="p">./test-interactive.sh</span></div>
-  </div>
-  <p class="sub" style="margin-top:22px">Inside: <code>!net</code> diagnostics · <code>search</code> · <code>netsearch</code> · <code>open &lt;link&gt;</code> · <code>zap 100</code> · <code>help</code></p>
+<!-- ═══ 02 AGENTONET ═══ -->
+<section id="agentonet" style="border-top:1px solid var(--line);background:var(--bg2)">
+  <div class="wrap">
+    <div class="shead"><span class="snum">02</span><span class="stitle">AgentoNet — the phone is a server</span></div>
+    <p class="sdesc">Your device hosts its own content. A relay is a blind pipe that never stores anything.
+    A DHT index stores metadata, never files. Links are content-addressed — the CID <i>is</i> the proof of what you'll receive.</p>
 
-  <table style="margin-top:44px">
-    <tr><td>Text bundle (~26 MB)</td><td><a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/agentic-os-0.3.0-beta-text.zip">agentic-os-0.3.0-beta-text.zip</a></td></tr>
-    <tr><td>Graphical image (~332 MB)</td><td><a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/agentic-os-0.3.0-beta-graphical.zip">agentic-os-0.3.0-beta-graphical.zip</a></td></tr>
-    <tr><td>Checksums</td><td><a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/SHA256SUMS.txt">SHA256SUMS.txt</a></td></tr>
-  </table>
+    <div class="modes">
+      <div class="mode"><div class="k">mode / 01</div><h3>Public</h3>
+        <p>Anyone with the link fetches from your device, live. Discoverable in the DHT.</p>
+        <div class="l">/pub/&lt;node&gt;/&lt;cid&gt;/file</div></div>
+      <div class="mode"><div class="k">mode / 02</div><h3>Restricted</h3>
+        <p>One link per person. Expiry dates, download caps, instant revoke.</p>
+        <div class="l">/sel/&lt;cid&gt;/&lt;token&gt;/file</div></div>
+      <div class="mode"><div class="k">mode / 03</div><h3>Private</h3>
+        <p>libsodium sealed box. Only the recipient's key opens it. Relay sees noise.</p>
+        <div class="l">/prv/&lt;cid&gt;/file.enc</div></div>
+    </div>
+
+    <div class="term">
+      <div class="bar"><i></i><i></i><i></i><span>agentonet — real session, captured from a gate test</span></div>
+      <pre><span class="p">$</span> echo 'hello from agentic os' > /tmp/share.txt
+<span class="p">$</span> agentic-shared share /tmp/share.txt <span class="y">public</span>
+<span class="g">Share link:
+  http://relay:7075/f/00a2da52…/pub/82a27d2e…/share.txt</span>
+
+<span class="d"># ── from a second, independent device ──</span>
+<span class="p">$</span> netsearch hello
+<span class="g">agentonet search — 1 result: hello · 82a27d2e…</span>
+<span class="p">$</span> wget -O- <span class="d">http://relay/f/00a2da52…/pub/82a27d2e…/share.txt</span>
+hello from agentic os
+
+<span class="p">$</span> wget <span class="d">…/sel/68e1ad43…/deadbeef/share2.txt</span>   <span class="r">[403] invalid token</span>
+<span class="p">$</span> wget <span class="d">…/sel/68e1ad43…/&lt;good-token&gt;/share2.txt</span> <span class="g">[200]</span>
+<span class="p">$</span> wget <span class="d">…/sel/68e1ad43…/&lt;good-token&gt;/share2.txt</span> <span class="g">[200]</span>
+<span class="p">$</span> wget <span class="d">…/sel/68e1ad43…/&lt;good-token&gt;/share2.txt</span> <span class="r">[429] download limit reached</span>
+
+<span class="d"># ── private, sealed for one keypair ──</span>
+<span class="p">$</span> agseal seal secret.txt <span class="y">&lt;recipient-pubkey&gt;</span> secret.txt.enc
+<span class="p">$</span> agseal open secret.txt.enc -
+<span class="g">top secret payload</span>  <span class="d"># relay carried only ciphertext</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 03 PROOF ═══ -->
+<section id="proof" class="wrap">
+  <div class="shead"><span class="snum">03</span><span class="stitle">Receipts, not promises</span></div>
+  <p class="sdesc">Every claim below was executed by an automated gate during this build cycle.
+  The network features were tested against live infrastructure.</p>
+  <div class="proof" style="margin-top:26px">
+    <div class="pf"><div class="big">6<span>/7</span></div><div class="lbl">live nostr relays accepted</div>
+      <p>event fee415e8… signed with our own pure-stdlib BIP340 Schnorr — then independently fetched back from nos.lol.</p></div>
+    <div class="pf"><div class="big">2<span> VMs</span></div><div class="lbl">independent peers, one transfer</div>
+      <p>Device B discovered device A's share via the DHT and pulled the bytes through the relay. Byte-perfect.</p></div>
+    <div class="pf"><div class="big">lnbc…</div><div class="lbl">real bolt11 invoice issued</div>
+      <p>Full LNURL-pay receive flow against getalby.com. <code>zap 100</code> works from inside the OS.</p></div>
+  </div>
+</section>
+
+<!-- ═══ 04 BOOT ═══ -->
+<section id="quickstart" style="border-top:1px solid var(--line);background:var(--bg2)">
+  <div class="wrap">
+    <div class="shead"><span class="snum">04</span><span class="stitle">Boot it</span></div>
+    <p class="sdesc">Needs <code>qemu-system-aarch64</code>. On macOS, HVF acceleration is automatic.</p>
+    <div class="qs">
+      <div class="term">
+        <div class="bar"><i></i><i></i><i></i><span>quickstart — text mode</span></div>
+        <pre><span class="d"># 1 · grab the text bundle</span>
+unzip agentic-os-0.3.0-beta-text.zip -d pryzentos
+cd pryzentos
+
+<span class="d"># 2 · model (Apache-2.0) + model disk</span>
+./download-model.sh
+
+<span class="d"># 3 · boot — the agent is your shell</span>
+./test-interactive.sh
+
+<span class="d"># graphical mode: grab the big zip, then</span>
+./launch-graphical.sh</pre>
+      </div>
+      <div>
+        <div class="dls">
+          <a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/agentic-os-0.3.0-beta-text.zip">
+            <span>agentic-os-0.3.0-beta-text.zip</span><span class="sz">26 MB <span class="arrow">↓</span></span></a>
+          <a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/agentic-os-0.3.0-beta-graphical.zip">
+            <span>agentic-os-0.3.0-beta-graphical.zip</span><span class="sz">342 MB <span class="arrow">↓</span></span></a>
+          <a href="https://github.com/iguha0/agentic-os/releases/download/v0.3.0-beta/SHA256SUMS.txt">
+            <span>SHA256SUMS.txt</span><span class="sz">verify <span class="arrow">↓</span></span></a>
+          <a href="https://github.com/iguha0/agentic-os/archive/refs/tags/v0.3.0-beta.tar.gz">
+            <span>source tarball</span><span class="sz">AGPL-3.0 <span class="arrow">↓</span></span></a>
+        </div>
+        <p style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:14px;line-height:1.9">
+          Ctrl+A then X exits QEMU.<br>Inside the OS: <span style="color:var(--violet2)">!net</span> ·
+          <span style="color:var(--violet2)">help</span> · <span style="color:var(--violet2)">netsearch</span> ·
+          <span style="color:var(--violet2)">open &lt;link&gt;</span> · <span style="color:var(--violet2)">zap 100</span></p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <footer>
-  <div class="wrap">
-    <p><b>Agentic OS</b> · AGPL-3.0 · built by <a href="https://github.com/iguha0">@iguha0</a></p>
-    <p style="margin-top:6px">relay.dynalora.com · dht.dynalora.com — coming online</p>
+  <div class="in">
+    <div>
+      <b>PRYZENT/OS</b> — AGPL-3.0 · © Indrajit Guha<br>
+      source: <a href="https://github.com/iguha0/agentic-os">github.com/iguha0/agentic-os</a>
+    </div>
+    <div>
+      protocol: <a href="https://github.com/iguha0/agentic-os/blob/main/docs/AGENTONET.md">AGENTONET.md</a><br>
+      nostr: 99a6fa753ae0bf02…<br>
+      relay.pryzento.com · dht.pryzento.com — coming online
+    </div>
   </div>
 </footer>
 
