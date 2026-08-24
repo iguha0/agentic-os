@@ -384,8 +384,8 @@ start_graphical_home() {
 
     if [ ! -S /tmp/.X11-unix/X0 ]; then
         echo "[agentic-init] Xorg failed to start; recent log:"
-        tail -n 40 /tmp/xorg.log 2>/dev/null || true
-        exec /bin/agentic-shell2
+        tail -n 40 /tmp/xorg.log 2>/dev/null
+        run_agent_shell_forever
     fi
 
     # Wait for input devices (tablet/keyboard) to be ready before starting clients
@@ -415,7 +415,7 @@ start_graphical_home() {
 
     if [ -z "$CHROMIUM" ]; then
         echo "[agentic-init] Chromium is missing; falling back to the agent shell"
-        exec /bin/agentic-shell2
+        run_agent_shell_forever
     fi
 
     echo "[agentic-init] Starting Chromium home UI (kiosk with CDP on 9222)..."
@@ -459,6 +459,15 @@ start_graphical_home() {
     exec /bin/sh -c 'while true; do sleep 86400; done'
 }
 
+# Run the agent shell forever (never let PID1 die).
+run_agent_shell_forever() {
+    while true; do
+        /bin/agentic-shell2
+        echo "[agentic-init] agent shell exited; restarting in 2s"
+        sleep 2
+    done
+}
+
 if [ "$AGENTIC_MODE" = "graphical" ]; then
     start_graphical_home
 fi
@@ -479,5 +488,10 @@ echo "Type what you want. Ctrl-D to exit. Type 'help' for commands."
 echo "AI commands: !local  !cloud  !auto  !keywords  !mode  !help"
 echo
 
-# Drop into the agent shell as PID 1's child
-exec /bin/agentic-shell2
+# Run the agent shell as PID 1's child, forever.
+# NEVER exec it from PID 1: if the shell exits, init dies -> kernel panic.
+while true; do
+    /bin/agentic-shell2
+    echo "[agentic-init] agent shell exited; restarting in 2s (Ctrl+C then 'reboot' to power off)"
+    sleep 2
+done

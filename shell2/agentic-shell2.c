@@ -63,6 +63,11 @@
 #define SEARX_HOST      "127.0.0.1"   /* on-device SearXNG metasearch daemon */
 #define SEARX_PORT      8888
 
+#ifndef AGENTO_DHT_HOST
+#define AGENTO_DHT_HOST "10.0.2.2"    /* AgentoNet DHT bootstrap (host Mac in beta) */
+#endif
+#define AGENTO_DHT_PORT 8889
+
 #define MAX_INPUT       4096
 #define MAX_RESPONSE    16384
 #define MAX_MEMORY      8192
@@ -620,6 +625,8 @@ static void build_prompt(const char *query, char *prompt_out, int prompt_len) {
         "TOOL:weather city=<city>\n"
         "TOOL:search query=<query>           # web search via on-device SearXNG (Google/Bing/Brave)\n"
         "TOOL:web_read url=<url>             # fetch a result page and read its text\n"
+        "TOOL:net_check                      # diagnose network/AI/search connectivity\n"
+        "TOOL:net_search query=<query>       # search the AgentoNet DHT for shared content\n"
         "TOOL:open_app name=<app-name>\n"
         "TOOL:certify file=<path>\n"
         "TOOL:whoami\n"
@@ -937,21 +944,52 @@ static void tool_search(const char *query, char *result, size_t reslen) {
     }
 
     if (!ok) {
-        /* SearXNG unreachable — fall back to a direct DuckDuckGo HTML scrape. */
+        /* SearXNG unreachable — fallback chain:
+           1. DuckDuckGo Lite HTML scrape (simple table, bot-tolerant)
+           2. DDG Instant Answer API (JSON, always reachable, no scraping)
+           Both run through busybox wget. */
         char cmd[768];
-        snprintf(cmd, sizeof(cmd),
-            "wget -q -O - --timeout=6 'https://html.duckduckgo.com/html/?q=%s' 2>/dev/null "
-            "| grep -o 'result__a[^>]*>[^<]*' | sed 's/.*>//' | head -5 || true",
-            qenc);
         char out[1536] = {0};
+
+        /* 1. DDG Lite: results are <a rel="nofollow" href="URL">TITLE</a> rows */
+        snprintf(cmd, sizeof(cmd),
+            "wget -q -O - --timeout=8 --tries=1 "
+            "-U 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36' "
+            "'https://lite.duckduckgo.com/lite/?q=%s' 2>/dev/null | "
+            "grep -o '<a[^>]*href=\"http[^\"]*\"[^>]*>[^<]*</a>' | "
+            "sed 's/<a[^>]*href=\"\\([^\"]*\\)\"[^>]*>/\\1 :: /; s/<\\/a>//' | "
+            "head -6 || true",
+            qenc);
         run_shell_capture(cmd, out, sizeof(out));
+
+        /* 2. Instant Answer API if the scrape came back empty/blocked */
+        if (!out[0]) {
+            snprintf(cmd, sizeof(cmd),
+                "wget -q -O - --timeout=8 'https://api.duckduckgo.com/?q=%s&format=json&no_html=1' 2>/dev/null || true",
+                qenc);
+            char api_out[2048] = {0};
+            run_shell_capture(cmd, api_out, sizeof(api_out));
+            const char *v = api_out[0] ? strstr(api_out, "\"AbstractText\":\"") : NULL;
+            if (v) {
+                v += 15;
+                char abstract[512] = {0};
+                size_t i = 0;
+                while (v[i] && v[i] != '"' && i < sizeof(abstract) - 1) {
+                    if (v[i] == '\\' && v[i+1]) i++;   /* skip escapes */
+                    abstract[i] = v[i]; i++;
+                }
+                abstract[i] = '\0';
+                snprintf(out, sizeof(out), "%s\n(source: DuckDuckGo instant answer)", abstract);
+            }
+        }
+
         if (out[0])
             snprintf(formatted, sizeof(formatted),
-                "(on-device SearXNG offline; DuckDuckGo fallback)\n%s", out);
+                "(SearXNG offline; DuckDuckGo fallback)\n%s", out);
         else
             snprintf(formatted, sizeof(formatted),
-                "search unavailable: SearXNG not reachable on %s:%d and no network "
-                "fallback. Is searxng running? See /tmp/searxng.log",
+                "search unavailable: SearXNG not reachable on %s:%d and web fallbacks "
+                "returned nothing (network may be down). Run '!net' to diagnose.",
                 SEARX_HOST, SEARX_PORT);
     }
 
@@ -1026,9 +1064,133 @@ static void tool_web_read(const char *url, char *result, size_t reslen) {
     free(text);
 }
 
+/* AgentoNet search: query the DHT index for shared content metadata. */
+static void tool_net_search(const char *query, char *result, size_t reslen) {
+    char qenc[512];
+    url_encode(query, qenc, sizeof(qenc));
+
+    char path[640];
+    snprintf(path, sizeof(path), "/search?q=%s&limit=8", qenc);
+
+    char *resp = malloc(MAX_RESPONSE);
+    if (!resp) { if (result) snprintf(result, reslen, "out of memory"); return; }
+
+    int n = http_get(AGENTO_DHT_HOST, AGENTO_DHT_PORT, path, resp, MAX_RESPONSE);
+    if (n <= 0) {
+        if (result) {
+            snprintf(result, reslen,
+                "agentonet: DHT unreachable at %s:%d (is the bootstrap node up?)",
+                AGENTO_DHT_HOST, AGENTO_DHT_PORT);
+        } else {
+            printf("agentonet: DHT unreachable at %s:%d\n", AGENTO_DHT_HOST, AGENTO_DHT_PORT);
+        }
+        free(resp);
+        return;
+    }
+
+    char *body = strstr(resp, "\r\n\r\n");
+    body = body ? body + 4 : resp;
+
+    /* count results */
+    int total = 0;
+    for (const char *p = body; (p = strstr(p, "\"cid\"")) != NULL; p += 5) total++;
+
+    char out[2048];
+    int off = 0;
+    off += snprintf(out + off, sizeof(out) - off,
+                    "agentonet search '%s' — %d result%s:\n",
+                    query, total, total == 1 ? "" : "s");
+
+    const char *scan = body;
+    int shown = 0;
+    while (shown < 8) {
+        const char *pcid = strstr(scan, "\"cid\"");
+        if (!pcid) break;
+        char cid[80], title[160], node[40], relay[200], type[64], sizekb[24];
+        json_str_after(pcid, "cid",   cid,   sizeof(cid));
+        json_str_after(pcid, "title", title, sizeof(title));
+        json_str_after(pcid, "node_id", node, sizeof(node));
+        json_str_after(pcid, "relay_url", relay, sizeof(relay));
+        json_str_after(pcid, "type",  type,  sizeof(type));
+        json_str_after(pcid, "size_kb", sizekb, sizeof(sizekb));
+        scan = pcid + 5;
+        if (!cid[0]) continue;
+        shown++;
+        off += snprintf(out + off, sizeof(out) - off,
+            "%d. %s\n   agento://%s/%s/%s (%s, %skb)\n   via %s\n",
+            shown, title[0] ? title : "(untitled)",
+            node, cid, "", type[0] ? type : "?", sizekb[0] ? sizekb : "?",
+            relay[0] ? relay : "unknown-relay");
+        if ((size_t)off >= sizeof(out) - 32) break;
+    }
+    if (shown == 0)
+        snprintf(out + off, sizeof(out) - off, "(nothing shared yet)");
+
+    if (result && reslen > 0)
+        snprintf(result, reslen, "%s", out);
+    else
+        printf("%s\n", out);
+    free(resp);
+}
+
+/* Network diagnostics — layered PASS/FAIL matrix so failures localize fast. */static void tool_net_check(char *result, size_t reslen) {
+    char out[2048];
+    int off = 0;
+    off += snprintf(out + off, sizeof(out) - off, "network check:\n");
+
+#define NETROW(label, okv) \
+    off += snprintf(out + off, sizeof(out) - off, "  [%s] %s\n", (okv) ? "PASS" : "FAIL", label)
+
+    char buf[256] = {0};
+    run_shell_capture("ip addr show eth0 2>/dev/null | grep -c 'inet 10\\.' || true", buf, sizeof(buf));
+    int ifup = atoi(buf) > 0;
+    NETROW("interface eth0 configured (10.0.2.x)", ifup);
+
+    if (ifup) {
+        run_shell_capture("ping -c 1 -W 2 10.0.2.2 >/dev/null 2>&1 && echo up || true", buf, sizeof(buf));
+        int gw = strstr(buf, "up") != NULL;
+        NETROW("gateway 10.0.2.2 reachable", gw);
+
+        run_shell_capture("ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1 && echo up || true", buf, sizeof(buf));
+        int icmp = strstr(buf, "up") != NULL;
+        NETROW("internet ICMP (8.8.8.8)", icmp);
+
+        run_shell_capture("nslookup example.com 2>/dev/null | grep -c Address || true", buf, sizeof(buf));
+        int dns = atoi(buf) > 0;
+        NETROW("DNS resolution (10.0.2.3)", dns);
+
+        run_shell_capture("wget -q -T 6 -O - http://example.com 2>/dev/null | head -c 16 || true", buf, sizeof(buf));
+        int http_ok = strstr(buf, "<!doctype") != NULL || strstr(buf, "<!DOCTYPE") != NULL;
+        NETROW("plain HTTP fetch", http_ok);
+
+        run_shell_capture("wget -q -T 8 -O - https://example.com 2>/dev/null | head -c 16 || true", buf, sizeof(buf));
+        int https_ok = strstr(buf, "<!doctype") != NULL || strstr(buf, "<!DOCTYPE") != NULL;
+        NETROW("HTTPS fetch (TLS+CA)", https_ok);
+    }
+
+    {
+        char resp[512] = {0};
+        int n = http_get(SEARX_HOST, SEARX_PORT, "/healthz", resp, sizeof(resp));
+        NETROW("local SearXNG (127.0.0.1:8888)", n > 0);
+    }
+    NETROW("llama-server (AI)", g_llm_available);
+
+#undef NETROW
+
+    /* Hint line for the most common failure */
+    if (!ifup)
+        off += snprintf(out + off, sizeof(out) - off, "hint: eth0 down — virtio_net module or QEMU -device virtio-net-pci missing\n");
+    else if (off < (int)sizeof(out))
+        ;
+
+    if (result && reslen > 0)
+        snprintf(result, reslen, "%s", out);
+    else
+        printf("%s\n", out);
+}
+
 /* Share a file via agentic-shared */
-static void tool_share(const char *file, const char *mode, const char *recipients) {
-    char cmd[MAX_INPUT + 256];
+static void tool_share(const char *file, const char *mode, const char *recipients) {    char cmd[MAX_INPUT + 256];
     if (strcmp(mode, "public") == 0) {
         snprintf(cmd, sizeof(cmd), "/usr/local/bin/agentic-shared share '%s' public", file);
     } else {
@@ -1127,6 +1289,20 @@ static int dispatch_tool(const char *line, char *result, size_t reslen) {
         if (url[0]) tool_web_read(url, rres, sizeof(rres));
         else snprintf(rres, sizeof(rres), "web_read: url= required");
         if (result) strncpy(result, rres, reslen-1);
+        return 1;
+    }
+    if (strncmp(spec, "net_check", 9) == 0) {
+        char nres[2048] = {0};
+        tool_net_check(nres, sizeof(nres));
+        if (result) strncpy(result, nres, reslen-1);
+        return 1;
+    }
+    if (strncmp(spec, "net_search", 10) == 0) {
+        const char *p = strstr(spec, "query=");
+        char sres[2200] = {0};
+        if (p) tool_net_search(p + 6, sres, sizeof(sres));
+        else snprintf(sres, sizeof(sres), "net_search: query= required");
+        if (result) strncpy(result, sres, reslen-1);
         return 1;
     }
     if (strncmp(spec, "share", 5) == 0) {
@@ -1659,6 +1835,18 @@ static int handle_builtin(const char *input) {
         printf("LLM: %s\n", g_llm_available ? "ONLINE" : "OFFLINE");
         return 1;
     }
+    if (strcmp(input, "!net") == 0 || strcmp(input, "net") == 0) {
+        tool_net_check(NULL, 0);
+        return 1;
+    }
+    if (strncmp(input, "netsearch ", 10) == 0) {
+        tool_net_search(input + 10, NULL, 0);
+        return 1;
+    }
+    if (strcmp(input, "netsearch") == 0) {
+        printf("Usage: netsearch <query> — search AgentoNet shared content\n");
+        return 1;
+    }
     /* Custom tools: run a user-created tool */
     if (strncmp(input, "tool ", 5) == 0) {
         const char *tname = input + 5;
@@ -1771,6 +1959,8 @@ static int handle_builtin(const char *input) {
             "  clear history            reset conversation\n"
             "  status                   show system status\n"
             "  !reconnect               retry llama-server connection\n"
+            "  !net                     network/AI connectivity diagnostics\n"
+            "  netsearch <query>        search AgentoNet shared content\n"
             "  exit / quit              exit\n\n"
             "Agentic web actions (AI can use these for flows like posting):\n"
             "  TOOL:browser_open url=...              open any URL\n"
