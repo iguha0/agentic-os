@@ -476,7 +476,7 @@ fi
 clear
 cat <<'BANNER'
 ================================================================
-  AGENTIC OS v0.1.0 — Qwen2.5 1.5B Instruct
+  AGENTIC OS v0.2.0-beta — AgentoNet enabled
   A phone OS where the home screen is an agent.
   This is a real init — no Android, no systemd, just mine.
 ================================================================
