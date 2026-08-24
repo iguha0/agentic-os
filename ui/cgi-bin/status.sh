@@ -53,6 +53,6 @@ cat <<EOF
   "uptime":         "${UPTIME_H}h ${UPTIME_M}m",
   "tunnel":         "$TUNNEL",
   "network":        "$NET",
-  "version":        "0.2.0-beta"
+  "version":        "0.3.0-beta"
 }
 EOF

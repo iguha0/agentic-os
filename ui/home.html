@@ -270,6 +270,9 @@ body::before {
       <div class="app-icon" onclick="runCmdInChat('/usr/local/bin/agentic-shared status')"><div class="glyph">📡</div><div class="label">My Server</div></div>
       <div class="app-icon" onclick="quickAsk('remember ')"><div class="glyph">🧠</div><div class="label">Memory</div></div>
       <div class="app-icon" onclick="switchScreen('settings')"><div class="glyph">⚙️</div><div class="label">Settings</div></div>
+      <div class="app-icon" onclick="switchScreen('store')"><div class="glyph">🛍️</div><div class="label">Store</div></div>
+      <div class="app-icon" onclick="makeApp()"><div class="glyph" style="background:linear-gradient(135deg,var(--accent),var(--blue));color:#fff">＋</div><div class="label">Add App</div></div>
+      <div id="user-apps-slot" style="display:contents"></div>
       <div class="app-icon" onclick="quickAsk('What can you do?')"><div class="glyph">✨</div><div class="label">Assistant</div></div>
     </div>
   </div>
@@ -354,6 +357,19 @@ I can remember things, browse the web, take notes, share files publicly / with s
     </div>
   </div>
 
+  <!-- ═══ STORE ═══ -->
+  <div class="screen" id="store-screen">
+    <div class="page-header"><h2>🛍 App Store</h2><span class="chip">F-Droid catalogue</span></div>
+    <div class="ns-bar">
+      <input class="f-input" id="st-q" placeholder="Search free & open-source apps…" onkeydown="if(event.key==='Enter')storeSearch()">
+      <button class="primary-btn" style="width:auto;padding:9px 18px" onclick="storeSearch()">Search</button>
+    </div>
+    <div id="store-body">
+      <div class="empty-hint" id="store-empty">Browse thousands of FOSS Android apps.<br>APKs download to your inbox — sideload onto any Android device.<br><br>Note: Agentic OS runs no Android binaries; downloads are take-away artifacts.</div>
+      <div id="store-results"></div>
+    </div>
+  </div>
+
   <!-- ═══ FILES ═══ -->
   <div class="screen" id="files-screen">
     <div id="files-header">
@@ -435,6 +451,7 @@ function switchScreen(name) {
   const scr = $(name + '-screen'); if (scr) scr.classList.add('active');
   const btn = $('dock-' + name); if (btn) btn.classList.add('active');
   if (name === 'share') loadShares();
+  if (name === 'store') storeSearchIfNeeded();
   if (name === 'settings') loadSettings();
 }
 
@@ -652,8 +669,69 @@ async function lightningInvoice(){
   $('ln-out').innerHTML = html;
 }
 
+/* ── user web-apps + app maker ── */
+async function loadUserApps() {
+  try {
+    const r = await fetch('/cgi-bin/apps_list.sh'); const d = await r.json();
+    const slot = $('user-apps-slot');
+    slot.innerHTML = '';
+    (d.apps||[]).forEach(a => {
+      const el = document.createElement('div');
+      el.className = 'app-icon';
+      const letter = (a.name||'?').trim()[0] || '?';
+      el.innerHTML = `<div class="glyph" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;font-weight:700;font-size:24px">${letter.toUpperCase()}</div><div class="label">${a.name}</div>`;
+      el.onclick = () => window.open(a.url, '_blank');
+      slot.appendChild(el);
+    });
+  } catch(e){}
+}
+function makeApp() {
+  const name = prompt('App name:');
+  if (!name) return;
+  const url = prompt('Site URL (you can log in first — the session is saved):', 'https://');
+  if (!url || url === 'https://') return;
+  fetch('/cgi-bin/app_create.sh', {method:'POST', body:'name='+encodeURIComponent(name)+'&url='+encodeURIComponent(url)})
+    .then(r=>r.json()).then(j=>{ if(j.ok){ loadUserApps(); } else alert(j.error||'failed'); });
+}
+
+/* ── store ── */
+let _stq = '';
+function storeSearchIfNeeded(){ if(_stq && $('st-q').value) return; }
+async function storeSearch() {
+  const q = $('st-q').value.trim();
+  if (!q) return;
+  _stq = q;
+  $('store-empty').style.display = 'none';
+  $('store-results').innerHTML = '<div class="empty-hint">Searching F-Droid…</div>';
+  try {
+    const r = await fetch('/cgi-bin/fdroid.sh?q=' + encodeURIComponent(q));
+    const d = await r.json();
+    $('store-results').innerHTML = '';
+    if (!d.apps || !d.apps.length) { $('store-results').innerHTML = '<div class="empty-hint">No results.</div>'; return; }
+    d.apps.forEach(a => {
+      const card = document.createElement('div');
+      card.className = 'share-card';
+      card.innerHTML = `<div class="row1"><span class="mode-badge mode-public">FOSS</span>
+        <span class="share-title" style="font-family:ui-monospace,monospace">${a.packageName}</span></div>
+        <div class="share-actions"><button class="mini-btn" data-pkg="${a.packageName}">⬇ Download APK</button><span class="share-meta" id="dl-${a.packageName}"></span></div>`;
+      card.querySelector('button').onclick = (ev) => {
+        ev.target.textContent = 'Downloading…';
+        fetch('/cgi-bin/fdroid.sh?download=' + encodeURIComponent(a.packageName))
+          .then(r=>r.json()).then(j=>{
+            document.getElementById('dl-'+a.packageName).textContent =
+              j.ok ? (' ✓ saved to inbox ('+Math.round(j.size/1024)+' KB)') : (' ✖ '+(j.error||'fail'));
+            if (j.ok) ev.target.textContent = '✓ In inbox';
+          });
+      };
+      $('store-results').appendChild(card);
+    });
+  } catch(e) {
+    $('store-results').innerHTML = '<div class="empty-hint">Search failed: '+e.message+'</div>';
+  }
+}
+
 /* boot */
-setTimeout(()=>{ loadShares().catch(()=>{}); }, 600);
+setTimeout(()=>{ loadShares().catch(()=>{}); loadUserApps().catch(()=>{}); }, 600);
 </script>
 </body>
 </html>

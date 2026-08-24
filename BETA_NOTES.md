@@ -63,11 +63,40 @@ share a file             # via Share app, or: agentic-shared share /path public
 netsearch photos         # search shared content
 ```
 
+## Day-2 additions (same beta branch)
+
+### Private-share full flow (was CLI-only)
+- `open <link>` (shell builtin + /usr/local/bin/open) and Share-app card:
+  fetch → E2E-decrypt → `/usr/share/agentic/inbox/`
+- Agent tool: `TOOL:open_share url=…`
+
+### Nostr is real now (was prototype)
+- Pure-stdlib BIP340 secp256k1 Schnorr (`net/nostr/bip340.py`)
+- Device nostr identity (`identity/nostr.key|pub`), canonical NIP-01 events
+- **Live-verified**: post accepted by nos.lol / primal / offchain / nostr.mom /
+  snort / wellorder; independently fetched back from nos.lol
+- Text mode degrades honestly (signing needs python3 → graphical image)
+
+### Lightning receive is real now (was prototype)
+- Full LNURL-pay (LUD-01/06/16): lightning address → params → callback → BOLT11
+- Live-verified against getalby.com (100-sat & 21-sat invoices)
+- `zap <sats>` builtin/CLI, `TOOL:request_payment`, Settings ⚡ card (+SVG QR when py3-qrcode present), tip-url on public shares
+
+### Apps, sessions & store
+- Persistent Chromium profile per device ⇒ agent can act on user's logged-in sessions via CDP tools
+- "＋ Add App": any site becomes a home-screen app backed by that session
+- F-Droid catalogue search + APK download-to-inbox (take-away artifacts;
+  no Android runtime by design)
+
+### Search hardening
+- botasaurus-inspired fallbacks: rotating UAs + Wikipedia opensearch merge
+- SearXNG remains the premium engine (graphical image)
+
 ## Known limitations (beta)
-- Relay/DHT bootstrap default to the developer Mac (`10.0.2.2`) — production domains TBD
-- Private-share recipient flow is CLI-level (`agseal open`) — UI decrypt lands post-beta
-- SearXNG ships only in the graphical image (text mode falls back to DDG chain)
-- Nostr/Lightning helpers remain prototypes
+- Relay/DHT bootstrap defaults to the developer Mac (`10.0.2.2`) — configurable
+  via env (`AGENTOS_RELAY_URL`, `AGENTOS_DHT_NODES`); production domains TBD
+- Invoice QR renders only where py3-qrcode exists (graphical); text mode shows the bolt11 string
+- Nostr signing needs python3 (graphical image)
 - libsodium static lib must be rebuilt with GNU ar for linking (see `prebuilt/agseal`)
 
 ## Verification summary (all automated, expect-driven QEMU boots)
@@ -83,3 +112,8 @@ netsearch photos         # search shared content
 | Web UI CGI surface (status/share/netsearch/chat) | PASS |
 | Exit → respawn (no kernel panic) | PASS |
 | Graphical boot → kiosk focused | PASS |
+| Two independent VMs: DHT discovery + relay transfer | PASS |
+| Private-share open flow (VM as recipient) | PASS |
+| Nostr post accepted by 6 live relays + fetch-back | PASS |
+| Lightning invoice via getalby LNURLp (host + in-guest zap) | PASS |
+| App create/list round-trip + F-Droid live search in-guest | PASS |

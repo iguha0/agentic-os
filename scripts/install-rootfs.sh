@@ -16,10 +16,10 @@ cp "$SCRIPT_DIR/../shell2/agentic-shell2" "$BIN/agentic-shell2"
 chmod 755 "$BIN/agentic-shell2"
 
 echo "[install] tools & daemons -> /usr/local/bin (extensionless + .sh aliases)..."
-install_sh() { # <src> <dst-noext>
+install_sh() { # <src> <dst-noext>  — refresh BOTH names so aliases never go stale
     cp "$1" "$LOCAL/$2"
     chmod 755 "$LOCAL/$2"
-    [ -f "$LOCAL/$2.sh" ] || cp "$1" "$LOCAL/$2.sh"
+    cp "$1" "$LOCAL/$2.sh"
 }
 install_sh "$SCRIPT_DIR/../net/share/agentic-shared.sh" agentic-shared
 install_sh "$SCRIPT_DIR/../net/share/share-tools.sh"   share-tools
@@ -37,6 +37,7 @@ install_sh "$SCRIPT_DIR/../net/nostr/nostr-publish.sh" nostr-publish
 cp "$SCRIPT_DIR/../net/nostr/nostr-ws.py"   "$LOCAL/nostr-ws.py";  chmod 755 "$LOCAL/nostr-ws.py"
 cp "$SCRIPT_DIR/../net/nostr/bip340.py"     "$LOCAL/bip340.py";    chmod 644 "$LOCAL/bip340.py"
 install_sh "$SCRIPT_DIR/../net/lightning/lnurl-pay.sh" lnurl-pay
+cp "$SCRIPT_DIR/../net/lightning/zap.sh" "$LOCAL/zap"; chmod 755 "$LOCAL/zap"
 install_sh "$SCRIPT_DIR/../net/search/distributed-search.sh" distributed-search
 
 # workflows + browser control keep their exact called names

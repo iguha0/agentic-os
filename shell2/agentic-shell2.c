@@ -953,16 +953,43 @@ static void tool_search(const char *query, char *result, size_t reslen) {
         char cmd[768];
         char out[1536] = {0};
 
-        /* 1. DDG Lite: results are <a rel="nofollow" href="URL">TITLE</a> rows */
+        /* botasaurus-inspired resilience: rotating UA per attempt */
+        const char *uas[3] = {
+            "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36",
+            "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Mobile Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17 Safari/605.1.15"
+        };
+        const char *ua = uas[time(NULL) % 3];
+
+        /* 1. DDG Lite: results are anchor rows */
         snprintf(cmd, sizeof(cmd),
-            "wget -q -O - --timeout=8 --tries=1 "
-            "-U 'Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36' "
+            "wget -q -O - --timeout=8 --tries=1 -U '%s' "
             "'https://lite.duckduckgo.com/lite/?q=%s' 2>/dev/null | "
             "grep -o '<a[^>]*href=\"http[^\"]*\"[^>]*>[^<]*</a>' | "
             "sed 's/<a[^>]*href=\"\\([^\"]*\\)\"[^>]*>/\\1 :: /; s/<\\/a>//' | "
             "head -6 || true",
-            qenc);
+            ua, qenc);
         run_shell_capture(cmd, out, sizeof(out));
+
+        /* 1b. Wikipedia opensearch merged in (reliable, bot-friendly) */
+        {
+            char wcmd[768];
+            snprintf(wcmd, sizeof(wcmd),
+                "wget -q -O - --timeout=6 "
+                "'https://en.wikipedia.org/w/api.php?action=opensearch&limit=3&namespace=0&format=json&search=%s' 2>/dev/null || true",
+                qenc);
+            char wiki[1024] = {0};
+            run_shell_capture(wcmd, wiki, sizeof(wiki));
+            if (wiki[0]) {
+                /* wiki json: ["q",["t1","t2"],["d1","d2"],["u1","u2"]] — crude scan */
+                char *titles = strstr(wiki, "[[");
+                if (titles) {
+                    int wlen = strlen(out);
+                    snprintf(out + wlen, sizeof(out) - wlen,
+                        "\nWikipedia: %.500s", titles);
+                }
+            }
+        }
 
         /* 2. Instant Answer API if the scrape came back empty/blocked */
         if (!out[0]) {
