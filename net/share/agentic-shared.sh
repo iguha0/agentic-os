@@ -295,11 +295,11 @@ cmd_revoke() {
             die "no token found for $recipient on $cid"
         fi
     else
-        # Revoke entire share
+        # Revoke entire share (index may be a single line; grep -v can exit 1)
         rm -rf "$SHARE_DIR/tokens/$cid"
-        # Remove from index (simple sed)
         tmp=$(mktemp)
-        grep -v "\"cid\":\"$cid\"" "$INDEX_FILE" > "$tmp" && mv "$tmp" "$INDEX_FILE"
+        grep -v "\"cid\":\"$cid\"" "$INDEX_FILE" > "$tmp" 2>/dev/null || true
+        mv "$tmp" "$INDEX_FILE"
         build_serve_root
         log "share $cid fully revoked"
     fi

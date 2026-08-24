@@ -6,12 +6,11 @@
 <title>Agentic OS</title>
 <style>
 :root {
-  --bg:         #0a0a0f;
-  --bg2:        #12121a;
-  --bg3:        #1a1a26;
-  --surface:    #1e1e2e;
-  --surface2:   #252538;
-  --border:     #2a2a40;
+  --bg:         #07070c;
+  --bg2:        #10101a;
+  --surface:    rgba(30,30,46,0.72);
+  --surface2:   rgba(37,37,56,0.85);
+  --border:     rgba(255,255,255,0.08);
   --accent:     #7c3aed;
   --accent2:    #a855f7;
   --accent3:    #c084fc;
@@ -19,18 +18,14 @@
   --red:        #ef4444;
   --yellow:     #eab308;
   --blue:       #3b82f6;
-  --text:       #e2e8f0;
+  --cyan:       #22d3ee;
+  --text:       #e8ecf4;
   --text2:      #94a3b8;
   --text3:      #64748b;
-  --user-msg:   #4c1d95;
-  --ai-msg:     #1e1e2e;
-  --radius:     16px;
-  --radius-sm:  8px;
-  --shadow:     0 8px 32px rgba(0,0,0,0.6);
+  --radius:     22px;
+  --radius-sm:  12px;
 }
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   width: 100vw; height: 100vh;
   background: var(--bg);
@@ -39,361 +34,248 @@ html, body {
   overflow: hidden;
   user-select: none;
 }
-
-/* ── Wallpaper ── */
 body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0;
   background:
-    radial-gradient(ellipse at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(168,85,247,0.1) 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 80%, rgba(59,130,246,0.08) 0%, transparent 50%),
-    var(--bg);
+    radial-gradient(ellipse at 18% 8%, rgba(124,58,237,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 90%, rgba(34,211,238,0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 15%, rgba(168,85,247,0.12) 0%, transparent 45%);
   pointer-events: none;
 }
 
-/* ── Status Bar ── */
+/* ── STATUS BAR ── */
 #statusbar {
-  position: fixed; top: 0; left: 0; right: 0;
-  height: 32px;
+  position: fixed; top: 0; left: 0; right: 0; height: 34px;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px;
-  background: rgba(10,10,15,0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  z-index: 100;
+  padding: 0 18px; z-index: 100;
   font-size: 12px; font-weight: 600;
-}
-#statusbar .left  { display: flex; gap: 8px; align-items: center; }
-#statusbar .right { display: flex; gap: 12px; align-items: center; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
-.status-dot.offline { background: var(--red); }
-#clock { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
-#ai-status { font-size: 11px; color: var(--text2); }
-
-/* ── Main layout ── */
-#main {
-  position: fixed; inset: 32px 0 80px 0;
-  z-index: 1;
-  overflow: hidden;
-}
-
-/* ── Screens ── */
-.screen {
-  position: absolute; inset: 0;
-  display: none; flex-direction: column;
-  padding: 0;
-  transition: opacity 0.2s ease;
-}
-.screen.active { display: flex; }
-
-/* ── CHAT SCREEN ── */
-#chat-screen { background: transparent; }
-
-#chat-header {
-  padding: 14px 20px 10px;
-  display: flex; align-items: center; gap: 12px;
-  background: rgba(18,18,26,0.5);
-  backdrop-filter: blur(10px);
+  background: rgba(7,7,12,0.55);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border);
 }
-.ai-avatar {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; flex-shrink: 0;
-  box-shadow: 0 0 16px rgba(124,58,237,0.4);
+#statusbar .left, #statusbar .right { display: flex; gap: 10px; align-items: center; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+.dot.off { background: var(--red); box-shadow: none; }
+.chip {
+  font-size: 10px; padding: 3px 9px; border-radius: 20px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text2);
 }
-.ai-info h3 { font-size: 15px; font-weight: 600; }
-.ai-info p  { font-size: 11px; color: var(--text2); margin-top: 1px; }
+#clock { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
 
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 16px 8px;
-  display: flex; flex-direction: column; gap: 12px;
-  scroll-behavior: smooth;
-}
-#messages::-webkit-scrollbar { width: 3px; }
-#messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+/* ── SCREENS ── */
+#screens { position: fixed; inset: 34px 0 84px 0; z-index: 1; overflow: hidden; }
+.screen { position: absolute; inset: 0; display: none; flex-direction: column; }
+.screen.active { display: flex; animation: fadeIn .18s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity:1; transform:none;} }
 
-.msg {
-  max-width: 80%; display: flex; flex-direction: column; gap: 4px;
-  animation: msgIn 0.25s ease;
+/* ── HOME ── */
+#home-screen { padding: 26px 24px 12px; }
+#hero-clock { text-align: center; margin: 8px 0 26px; }
+#hero-clock .big {
+  font-size: 64px; font-weight: 200; letter-spacing: -1px;
+  background: linear-gradient(180deg,#fff,#a78bfa);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
-@keyframes msgIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.msg.user { align-self: flex-end; align-items: flex-end; }
-.msg.ai   { align-self: flex-start; align-items: flex-start; }
-
-.bubble {
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  font-size: 14px; line-height: 1.5;
-  word-break: break-word;
-}
-.msg.user .bubble {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-bottom-right-radius: 4px;
-  color: #fff;
-}
-.msg.ai .bubble {
-  background: var(--surface);
-  border-bottom-left-radius: 4px;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-.bubble.typing { display: flex; gap: 5px; align-items: center; padding: 14px 18px; }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
-.dot:nth-child(2) { animation-delay: 0.2s; }
-.dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-8px)} }
-
-.msg-time { font-size: 10px; color: var(--text3); padding: 0 4px; }
-
-#chat-input-area {
-  padding: 12px 16px 14px;
-  background: rgba(18,18,26,0.7);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border);
-  display: flex; gap: 10px; align-items: flex-end;
-}
-#chat-input {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  color: var(--text);
-  font-size: 14px;
-  padding: 10px 18px;
-  outline: none;
-  resize: none;
-  max-height: 120px; min-height: 44px;
-  line-height: 1.4;
-  transition: border-color 0.2s;
-  font-family: inherit;
-}
-#chat-input:focus { border-color: var(--accent); }
-#chat-input::placeholder { color: var(--text3); }
-
-#send-btn {
-  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border: none; cursor: pointer; color: #fff; font-size: 18px;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform 0.15s, opacity 0.15s;
-  box-shadow: 0 4px 16px rgba(124,58,237,0.5);
-}
-#send-btn:hover  { transform: scale(1.08); }
-#send-btn:active { transform: scale(0.95); opacity: 0.8; }
-#send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-.quick-actions {
-  display: flex; gap: 8px; padding: 6px 16px 0;
-  overflow-x: auto;
-}
-.quick-actions::-webkit-scrollbar { display: none; }
-.qa-btn {
-  white-space: nowrap; padding: 5px 12px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 20px; color: var(--text2); font-size: 12px;
-  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
-}
-.qa-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-/* ── APP GRID SCREEN ── */
-#apps-screen {
-  background: rgba(10,10,15,0.95);
-  backdrop-filter: blur(30px);
-  padding: 20px 16px;
-  overflow-y: auto;
-}
-#apps-screen h2 {
-  font-size: 22px; font-weight: 700; margin-bottom: 8px;
-  background: linear-gradient(135deg, #fff, var(--accent3));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-#app-search {
-  width: 100%; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); color: var(--text); font-size: 14px;
-  padding: 10px 16px; outline: none; margin-bottom: 20px;
-  font-family: inherit;
-}
-#app-search:focus { border-color: var(--accent); }
-#app-search::placeholder { color: var(--text3); }
-
-.app-section { margin-bottom: 24px; }
-.app-section h3 { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
-
+#hero-clock .date { color: var(--text2); font-size: 14px; margin-top: 2px; letter-spacing: 2px; text-transform: uppercase; }
+#greeting { text-align:center; color:var(--text2); font-size:13px; margin-bottom:22px; }
 .app-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 20px 8px; justify-items: center;
 }
 .app-icon {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 7px;
   cursor: pointer;
-  transition: transform 0.15s;
 }
-.app-icon:hover  { transform: scale(1.08); }
-.app-icon:active { transform: scale(0.95); }
-.app-icon-img {
-  width: 60px; height: 60px; border-radius: 16px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-}
-.app-icon span { font-size: 11px; color: var(--text2); text-align: center; line-height: 1.2; }
-
-/* ── FILES SCREEN ── */
-#files-screen { background: var(--bg2); }
-#files-header {
-  padding: 14px 20px;
-  display: flex; align-items: center; gap: 12px;
-  border-bottom: 1px solid var(--border);
-}
-#files-header h2 { font-size: 18px; font-weight: 700; flex: 1; }
-#file-path {
-  font-size: 12px; color: var(--text3); padding: 6px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-#file-list { flex: 1; overflow-y: auto; padding: 8px; }
-.file-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 12px; border-radius: var(--radius-sm);
-  cursor: pointer; transition: background 0.15s;
-}
-.file-item:hover { background: var(--surface); }
-.file-icon { font-size: 24px; width: 32px; text-align: center; flex-shrink: 0; }
-.file-info { flex: 1; }
-.file-name { font-size: 14px; }
-.file-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.file-action { color: var(--text3); font-size: 18px; padding: 4px 8px; }
-
-/* ── SETTINGS SCREEN ── */
-#settings-screen { background: var(--bg2); padding: 20px 16px; overflow-y: auto; }
-#settings-screen h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
-.settings-section { margin-bottom: 24px; }
-.settings-section h3 { font-size: 12px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
-.setting-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; background: var(--surface); border-radius: var(--radius-sm);
-  margin-bottom: 2px;
-}
-.setting-item:first-of-type { border-radius: var(--radius) var(--radius) var(--radius-sm) var(--radius-sm); }
-.setting-item:last-of-type  { border-radius: var(--radius-sm) var(--radius-sm) var(--radius) var(--radius); }
-.setting-label { font-size: 14px; }
-.setting-value { font-size: 13px; color: var(--text2); }
-.setting-arrow { color: var(--text3); }
-
-/* ── Bottom Nav ── */
-#navbar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  height: 80px;
-  background: rgba(14,14,20,0.85);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border-top: 1px solid rgba(255,255,255,0.07);
-  display: flex; align-items: center; justify-content: space-around;
-  padding: 0 8px 16px;
-  z-index: 100;
-}
-.nav-item {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 8px 16px; border-radius: var(--radius);
-  cursor: pointer; transition: all 0.2s; position: relative;
-  min-width: 64px;
-}
-.nav-item:hover { background: rgba(255,255,255,0.05); }
-.nav-item.active { color: var(--accent3); }
-.nav-item:not(.active) { color: var(--text3); }
-.nav-icon { font-size: 22px; line-height: 1; }
-.nav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.3px; }
-.nav-item.active .nav-icon {
-  filter: drop-shadow(0 0 8px rgba(192,132,252,0.8));
-}
-.nav-pip {
-  position: absolute; top: 4px; right: 14px;
-  width: 6px; height: 6px; border-radius: 50%; background: var(--accent2);
-  display: none;
-}
-.nav-pip.show { display: block; }
-
-/* ── Notification toast ── */
-#toast {
-  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+.app-icon .glyph {
+  width: 58px; height: 58px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; font-size: 27px;
   background: var(--surface); border: 1px solid var(--border);
-  padding: 10px 20px; border-radius: 24px;
-  font-size: 13px; color: var(--text);
-  box-shadow: var(--shadow);
-  z-index: 200; pointer-events: none;
-  transition: opacity 0.3s;
-  opacity: 0;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+  transition: transform .12s ease;
 }
-#toast.show { opacity: 1; }
+.app-icon:active .glyph { transform: scale(.92); }
+.app-icon .label { font-size: 11px; color: var(--text2); font-weight: 500; }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+/* ── DOCK ── */
+#dock {
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; padding: 9px 14px; z-index: 90;
+  background: rgba(20,20,32,0.72); border: 1px solid var(--border); border-radius: 28px;
+  backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.55);
+}
+.dock-btn {
+  width: 54px; height: 54px; border-radius: 17px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  transition: transform .12s ease, background .15s ease;
+}
+.dock-btn.active { background: linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow: 0 6px 18px rgba(124,58,237,.45); }
+.dock-btn:active { transform: scale(.9); }
 
-/* ── Welcome overlay ── */
-#welcome {
-  position: fixed; inset: 0; z-index: 300;
-  background: var(--bg);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 24px;
-  transition: opacity 0.5s;
+/* ── GENERIC PAGE ── */
+.page-header { display:flex; align-items:center; gap:12px; padding:16px 20px 10px; }
+.page-header h2 { font-size:19px; font-weight:700; flex:1; }
+.pill-btn {
+  background: var(--surface); border:1px solid var(--border); color: var(--text2);
+  padding:7px 14px; border-radius:20px; cursor:pointer; font-size:12px; font-weight:600;
 }
-#welcome.gone { opacity: 0; pointer-events: none; }
-.welcome-logo {
-  width: 100px; height: 100px; border-radius: 28px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2), #60a5fa);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 52px;
-  box-shadow: 0 0 60px rgba(124,58,237,0.5);
-  animation: pulse 2s ease-in-out infinite;
+
+/* ── CHAT ── */
+#chat-header { padding: 12px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border); }
+.ai-avatar {
+  width:42px; height:42px; border-radius:14px; font-size:21px;
+  display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg,var(--accent),var(--blue));
+  box-shadow: 0 6px 18px rgba(124,58,237,.4);
 }
-@keyframes pulse { 0%,100%{box-shadow:0 0 40px rgba(124,58,237,0.4)} 50%{box-shadow:0 0 80px rgba(124,58,237,0.8)} }
-.welcome-logo.ready { animation: none; box-shadow: 0 0 40px rgba(34,197,94,0.6); background: linear-gradient(135deg, #166534, var(--green)); }
-#welcome h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-#welcome p  { font-size: 15px; color: var(--text2); }
-#welcome-status { font-size: 13px; color: var(--text3); }
+.ai-info h3 { font-size:15px; }
+.ai-info p { font-size:11px; color:var(--text2); }
+.quick-actions { display:flex; gap:8px; padding:10px 16px; overflow-x:auto; flex-shrink:0; }
+.qa-btn {
+  white-space:nowrap; background:var(--surface); border:1px solid var(--border); color:var(--text2);
+  padding:7px 13px; border-radius:18px; font-size:12px; cursor:pointer;
+}
+.qa-btn:active { background:var(--surface2); }
+#messages { flex:1; overflow-y:auto; padding:6px 16px 12px; display:flex; flex-direction:column; gap:10px; }
+.msg { max-width:86%; display:flex; flex-direction:column; }
+.msg.user { align-self:flex-end; align-items:flex-end; }
+.msg.ai { align-self:flex-start; align-items:flex-start; }
+.bubble {
+  padding:11px 15px; border-radius:18px; font-size:13.5px; line-height:1.5;
+  white-space:pre-wrap; word-break:break-word; user-select:text;
+}
+.msg.user .bubble { background:linear-gradient(135deg,#5b21b6,#7c3aed); border-bottom-right-radius:6px; }
+.msg.ai .bubble { background:var(--surface); border:1px solid var(--border); border-bottom-left-radius:6px; }
+.toolchip {
+  font-family:ui-monospace,Menlo,monospace; font-size:10px; color:var(--cyan);
+  background:rgba(34,211,238,.08); border:1px solid rgba(34,211,238,.25);
+  padding:3px 9px; border-radius:10px; margin-top:5px; user-select:text;
+}
+.msg-time { font-size:9.5px; color:var(--text3); margin:4px 6px 0; }
+#typing { display:none; padding:2px 6px; color:var(--text3); font-size:12px; font-style:italic; }
+#chat-input-area {
+  display:flex; gap:9px; padding:11px 14px; border-top:1px solid var(--border);
+  background:rgba(10,10,18,.65); backdrop-filter:blur(20px);
+}
+#chat-input {
+  flex:1; resize:none; background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:20px; padding:11px 16px; font-size:14px; outline:none; font-family:inherit; max-height:110px;
+}
+#send-btn {
+  width:44px; height:44px; border-radius:50%; border:none; cursor:pointer; font-size:17px; color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--accent2)); box-shadow:0 4px 14px rgba(124,58,237,.5);
+}
+
+/* ── SHARE APP ── */
+#share-body, #netsearch-body { flex:1; overflow-y:auto; padding:6px 18px 20px; }
+.share-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:13px 15px; margin-bottom:10px;
+}
+.share-card .row1 { display:flex; align-items:center; gap:9px; }
+.mode-badge { font-size:9.5px; font-weight:700; padding:3px 9px; border-radius:10px; letter-spacing:.5px; }
+.mode-public { background:rgba(34,197,94,.15); color:var(--green); }
+.mode-selective { background:rgba(59,130,246,.15); color:var(--blue); }
+.mode-private { background:rgba(168,85,247,.18); color:var(--accent3); }
+.share-title { font-size:13.5px; font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.share-meta { font-size:10.5px; color:var(--text3); margin-top:5px; word-break:break-all; user-select:text; }
+.share-actions { display:flex; gap:8px; margin-top:9px; }
+.mini-btn {
+  font-size:11px; padding:5px 12px; border-radius:14px; cursor:pointer; font-weight:600;
+  background:var(--bg2); border:1px solid var(--border); color:var(--text2);
+}
+.mini-btn.danger { color:var(--red); border-color:rgba(239,68,68,.35); }
+.form-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; margin-bottom:14px;
+}
+.form-card h3 { font-size:14px; margin-bottom:12px; }
+.f-row { display:flex; gap:8px; margin-bottom:9px; }
+.f-input, .f-select {
+  flex:1; background:var(--bg2); border:1px solid var(--border); color:var(--text);
+  border-radius:10px; padding:9px 12px; font-size:12.5px; outline:none; min-width:0;
+}
+.primary-btn {
+  width:100%; padding:11px; border:none; border-radius:12px; cursor:pointer;
+  font-size:13px; font-weight:700; color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 5px 16px rgba(124,58,237,.4);
+}
+.link-out {
+  display:none; margin-top:10px; padding:10px 12px; border-radius:10px;
+  background:var(--bg2); border:1px dashed var(--accent); font-size:11px;
+  color:var(--accent3); word-break:break-all; user-select:text; font-family:ui-monospace,monospace;
+}
+
+/* ── NET SEARCH ── */
+.ns-bar { display:flex; gap:8px; padding:10px 18px; }
+#ns-results .share-card { cursor:pointer; }
+.empty-hint { text-align:center; color:var(--text3); font-size:12.5px; padding:36px 30px; line-height:1.7; }
+
+/* ── FILES ── */
+#files-header { display:flex; align-items:center; gap:10px; padding:16px 20px 8px; }
+#file-path { padding:0 20px 8px; font-size:11px; color:var(--text3); font-family:ui-monospace,monospace; }
+#file-list { flex:1; overflow-y:auto; padding:0 14px 14px; }
+.file-row {
+  display:flex; align-items:center; gap:11px; padding:11px 13px; margin-bottom:7px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); cursor:pointer;
+}
+.file-row .fname { flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-row .fsize { font-size:10.5px; color:var(--text3); }
+
+/* ── SETTINGS ── */
+#settings-body { flex:1; overflow-y:auto; padding:4px 18px 24px; }
+.settings-section { margin-bottom:14px; }
+.settings-section h3 { font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--text3); margin:0 4px 7px; }
+.setting-item {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:12px 15px; margin-bottom:6px;
+}
+.setting-label { font-size:13px; color:var(--text2); }
+.setting-value { font-size:12.5px; font-weight:600; user-select:text; }
+::-webkit-scrollbar { width: 0; height: 0; }
 </style>
 </head>
 <body>
 
-<!-- Welcome Screen -->
-<div id="welcome">
-  <div class="welcome-logo" id="wlogo">🤖</div>
-  <h1>Agentic OS</h1>
-  <p>Your AI-powered home screen</p>
-  <div id="welcome-status">Starting up...</div>
-</div>
-
-<!-- Status Bar -->
 <div id="statusbar">
   <div class="left">
-    <span id="clock">00:00</span>
-    <div class="status-dot" id="net-dot"></div>
-    <span id="ai-status">AI offline</span>
+    <span class="dot" id="net-dot"></span><span class="chip" id="sb-net">NET</span>
+    <span class="dot" id="ai-dot"></span><span class="chip" id="sb-ai">AI</span>
   </div>
+  <div id="clock">--:--</div>
   <div class="right">
-    <span id="node-id" style="color:var(--text3);font-size:10px"></span>
-    <span>📶</span>
-    <span>🔋</span>
+    <span class="chip" id="sb-node">node —</span>
   </div>
 </div>
 
-<!-- Main content area -->
-<div id="main">
+<div id="screens">
 
-  <!-- CHAT SCREEN -->
-  <div class="screen active" id="chat-screen">
+  <!-- ═══ HOME ═══ -->
+  <div class="screen active" id="home-screen">
+    <div id="hero-clock">
+      <div class="big" id="hero-time">--:--</div>
+      <div class="date" id="hero-date">—</div>
+    </div>
+    <div id="greeting">Your agent is running. Just ask.</div>
+    <div class="app-grid">
+      <div class="app-icon" onclick="switchScreen('chat')"><div class="glyph">🤖</div><div class="label">Agent</div></div>
+      <div class="app-icon" onclick="switchScreen('share')"><div class="glyph">🪐</div><div class="label">Share</div></div>
+      <div class="app-icon" onclick="switchScreen('netsearch')"><div class="glyph">🛰️</div><div class="label">Net Search</div></div>
+      <div class="app-icon" onclick="switchScreen('files')"><div class="glyph">📁</div><div class="label">Files</div></div>
+      <div class="app-icon" onclick="runCmdInChat('/usr/local/bin/agentic-shared status')"><div class="glyph">📡</div><div class="label">My Server</div></div>
+      <div class="app-icon" onclick="quickAsk('remember ')"><div class="glyph">🧠</div><div class="label">Memory</div></div>
+      <div class="app-icon" onclick="switchScreen('settings')"><div class="glyph">⚙️</div><div class="label">Settings</div></div>
+      <div class="app-icon" onclick="quickAsk('What can you do?')"><div class="glyph">✨</div><div class="label">Assistant</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ CHAT ═══ -->
+  <div class="screen" id="chat-screen">
     <div id="chat-header">
       <div class="ai-avatar">🤖</div>
       <div class="ai-info">
@@ -402,459 +284,319 @@ body::before {
       </div>
     </div>
     <div class="quick-actions">
-      <button class="qa-btn" onclick="quickAsk('What can you do?')">💡 What can you do?</button>
+      <button class="qa-btn" onclick="quickAsk('What can you do?')">💡 Abilities</button>
       <button class="qa-btn" onclick="quickAsk('Show my notes')">📝 Notes</button>
-      <button class="qa-btn" onclick="quickAsk('What is the weather today?')">🌤 Weather</button>
-      <button class="qa-btn" onclick="quickAsk('Search for latest AI news')">🔍 Search</button>
-      <button class="qa-btn" onclick="quickAsk('Tell me something interesting')">✨ Surprise me</button>
+      <button class="qa-btn" onclick="quickAsk('What is the weather in Mumbai?')">🌤 Weather</button>
+      <button class="qa-btn" onclick="quickAsk('Search for the latest AI news')">🔍 Web search</button>
+      <button class="qa-btn" onclick="quickAsk('Search AgentoNet for shared photos')">🛰 Net search</button>
     </div>
     <div id="messages">
       <div class="msg ai">
-        <div class="bubble">
-          Hello! I'm your AI assistant running locally on Agentic OS.<br><br>
-          I can remember things, search the web, take notes, share files, certify your content, and much more.<br><br>
-          What would you like to do? 👋
-        </div>
+        <div class="bubble">Hello! I run locally on this device — no cloud needed.
+
+I can remember things, browse the web, take notes, share files publicly / with specific people / end-to-end encrypted, and search everything shared on AgentoNet.</div>
         <span class="msg-time" id="first-msg-time"></span>
       </div>
     </div>
+    <div id="typing">agent is thinking…</div>
     <div id="chat-input-area">
       <textarea id="chat-input" placeholder="Type a message..." rows="1"></textarea>
       <button id="send-btn" onclick="sendMessage()" title="Send">➤</button>
     </div>
   </div>
 
-  <!-- APPS SCREEN -->
-  <div class="screen" id="apps-screen">
-    <h2>Apps</h2>
-    <input type="text" id="app-search" placeholder="🔍  Search apps..." oninput="filterApps(this.value)">
-    <div id="app-grid-container"></div>
+  <!-- ═══ SHARE ═══ -->
+  <div class="screen" id="share-screen">
+    <div class="page-header">
+      <h2>🪐 My Server</h2>
+      <span class="pill-btn" id="share-tunnel-badge">tunnel: —</span>
+    </div>
+    <div id="share-body">
+      <div class="form-card">
+        <h3>Share a file from this device</h3>
+        <div class="f-row"><input class="f-input" id="sh-file" placeholder="/path/to/file"></div>
+        <div class="f-row">
+          <select class="f-select" id="sh-mode">
+            <option value="public">🌐 Public — anyone with link</option>
+            <option value="selective">🎟 Restricted — token per person</option>
+            <option value="private">🔐 Private — E2E encrypted</option>
+          </select>
+        </div>
+        <div class="f-row"><input class="f-input" id="sh-recip" placeholder="recipients (comma sep) or pubkey b64"></div>
+        <div class="f-row">
+          <input class="f-input" id="sh-exp" placeholder="expires epoch (optional)">
+          <input class="f-input" id="sh-maxdl" placeholder="max downloads">
+        </div>
+        <button class="primary-btn" onclick="createShare()">Create share</button>
+        <div class="link-out" id="sh-link"></div>
+      </div>
+      <h3 style="font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin:4px 4px 8px;">Active shares</h3>
+      <div id="share-list"><div class="empty-hint">Loading…</div></div>
+    </div>
   </div>
 
-  <!-- FILES SCREEN -->
+  <!-- ═══ NET SEARCH ═══ -->
+  <div class="screen" id="netsearch-screen">
+    <div class="page-header"><h2>🛰 AgentoNet Search</h2></div>
+    <div class="ns-bar">
+      <input class="f-input" id="ns-q" placeholder="Search content shared by devices…" onkeydown="if(event.key==='Enter')netSearch()">
+      <button class="primary-btn" style="width:auto;padding:9px 18px;" onclick="netSearch()">Go</button>
+    </div>
+    <div id="netsearch-body">
+      <div class="empty-hint" id="ns-empty">Everything people choose to share publicly is indexed here —<br>metadata only, never your private files.<br><br>Try: <b>photo</b> · <b>notes</b> · <b>demo</b></div>
+      <div id="ns-results"></div>
+    </div>
+  </div>
+
+  <!-- ═══ FILES ═══ -->
   <div class="screen" id="files-screen">
     <div id="files-header">
       <span style="font-size:22px">📁</span>
       <h2>Files</h2>
-      <button onclick="loadFiles('/')" style="background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px">Root</button>
+      <button class="pill-btn" onclick="loadFiles('/')">Root</button>
     </div>
     <div id="file-path">/</div>
     <div id="file-list"><div style="padding:24px;text-align:center;color:var(--text3)">Loading...</div></div>
   </div>
 
-  <!-- SETTINGS SCREEN -->
+  <!-- ═══ SETTINGS ═══ -->
   <div class="screen" id="settings-screen">
-    <h2>Settings</h2>
-    <div class="settings-section">
-      <h3>Identity</h3>
-      <div class="setting-item"><span class="setting-label">Node ID</span><span class="setting-value" id="s-node-id">—</span></div>
-      <div class="setting-item"><span class="setting-label">Username</span><span class="setting-value" id="s-username">user</span></div>
-    </div>
-    <div class="settings-section">
-      <h3>AI Engine</h3>
-      <div class="setting-item"><span class="setting-label">llama-server</span><span class="setting-value" id="s-llm">127.0.0.1:8080</span></div>
-      <div class="setting-item"><span class="setting-label">Model</span><span class="setting-value" id="s-model">Qwen2.5 1.5B</span></div>
-      <div class="setting-item"><span class="setting-label">Status</span><span class="setting-value" id="s-status">—</span></div>
-    </div>
-    <div class="settings-section">
-      <h3>Network</h3>
-      <div class="setting-item"><span class="setting-label">Gateway</span><span class="setting-value">10.0.2.2</span></div>
-      <div class="setting-item"><span class="setting-label">IP</span><span class="setting-value">10.0.2.15</span></div>
-    </div>
-    <div class="settings-section">
-      <h3>Content</h3>
-      <div class="setting-item" onclick="runCmd('nostr status')"><span class="setting-label">Nostr Status</span><span class="setting-arrow">›</span></div>
-      <div class="setting-item" onclick="runCmd('lightning status')"><span class="setting-label">Lightning</span><span class="setting-arrow">›</span></div>
-    </div>
-    <div class="settings-section">
-      <h3>System</h3>
-      <div class="setting-item" onclick="if(confirm('Reboot?'))runCmd('reboot')">
-        <span class="setting-label" style="color:var(--yellow)">Reboot</span><span class="setting-arrow">›</span>
+    <div class="page-header"><h2>⚙️ Settings</h2></div>
+    <div id="settings-body">
+      <div class="settings-section">
+        <h3>Identity</h3>
+        <div class="setting-item"><span class="setting-label">Node ID</span><span class="setting-value" id="s-node-id">—</span></div>
+        <div class="setting-item"><span class="setting-label">Username</span><span class="setting-value" id="s-username">user</span></div>
       </div>
-      <div class="setting-item" onclick="if(confirm('Shutdown?'))runCmd('shutdown')">
-        <span class="setting-label" style="color:var(--red)">Shutdown</span><span class="setting-arrow">›</span>
+      <div class="settings-section">
+        <h3>AI Engine</h3>
+        <div class="setting-item"><span class="setting-label">llama-server</span><span class="setting-value" id="s-llm">—</span></div>
+        <div class="setting-item"><span class="setting-label">Model</span><span class="setting-value">Qwen2.5 1.5B Instruct</span></div>
+        <div class="setting-item"><span class="setting-label">Status</span><span class="setting-value" id="s-status">—</span></div>
+      </div>
+      <div class="settings-section">
+        <h3>Network & AgentoNet</h3>
+        <div class="setting-item"><span class="setting-label">Device IP</span><span class="setting-value">10.0.2.15</span></div>
+        <div class="setting-item"><span class="setting-label">Tunnel</span><span class="setting-value" id="s-tunnel">—</span></div>
+        <div class="setting-item"><span class="setting-label">Relay</span><span class="setting-value">10.0.2.2:7075</span></div>
+        <div class="setting-item"><span class="setting-label">DHT index</span><span class="setting-value">10.0.2.2:8889</span></div>
+      </div>
+      <div class="settings-section">
+        <h3>Danger zone</h3>
+        <div class="setting-item" onclick="runCmd('reboot')"><span class="setting-label">Reboot device</span><span class="setting-arrow">›</span></div>
       </div>
     </div>
   </div>
 
-</div>
+</div><!-- /screens -->
 
-<!-- Bottom Navigation -->
-<div id="navbar">
-  <div class="nav-item active" id="nav-chat" onclick="switchScreen('chat')">
-    <div class="nav-icon">💬</div>
-    <div class="nav-label">AI</div>
-  </div>
-  <div class="nav-item" id="nav-apps" onclick="switchScreen('apps')">
-    <div class="nav-icon">⚡</div>
-    <div class="nav-label">Apps</div>
-  </div>
-  <div class="nav-item" id="nav-files" onclick="switchScreen('files')">
-    <div class="nav-icon">📂</div>
-    <div class="nav-label">Files</div>
-  </div>
-  <div class="nav-item" id="nav-settings" onclick="switchScreen('settings')">
-    <div class="nav-icon">⚙️</div>
-    <div class="nav-label">Settings</div>
-  </div>
+<div id="dock">
+  <button class="dock-btn active" id="dock-home" onclick="switchScreen('home')" title="Home">⌂</button>
+  <button class="dock-btn" id="dock-chat" onclick="switchScreen('chat')" title="Agent">🤖</button>
+  <button class="dock-btn" id="dock-share" onclick="switchScreen('share')" title="Share">🪐</button>
+  <button class="dock-btn" id="dock-netsearch" onclick="switchScreen('netsearch')" title="Search">🛰️</button>
+  <button class="dock-btn" id="dock-files" onclick="switchScreen('files')" title="Files">📁</button>
+  <button class="dock-btn" id="dock-settings" onclick="switchScreen('settings')" title="Settings">⚙️</button>
 </div>
-
-<!-- Toast -->
-<div id="toast"></div>
 
 <script>
-// ── Config ──────────────────────────────────────────────────────────────────
-const API = 'http://localhost:7080/cgi-bin';
-let aiOnline   = false;
-let currentPath = '/';
-let chatHistory = [];  // [{role, content}]
+const $ = id => document.getElementById(id);
 
-// ── Clock ───────────────────────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2,'0');
-  const m = String(now.getMinutes()).padStart(2,'0');
-  document.getElementById('clock').textContent = h + ':' + m;
-  document.getElementById('first-msg-time').textContent =
-    h + ':' + m;
+/* ── clock ── */
+function tick() {
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+  $('clock').textContent = `${hh}:${mm}`;
+  $('hero-time').textContent = `${hh}:${mm}`;
+  $('hero-date').textContent = d.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
 }
-setInterval(updateClock, 1000);
-updateClock();
+setInterval(tick, 1000); tick();
 
-// ── Toast ───────────────────────────────────────────────────────────────────
-function toast(msg, ms=2500) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), ms);
-}
-
-// ── Screen switching ─────────────────────────────────────────────────────────
+/* ── navigation ── */
 function switchScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById(name + '-screen').classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
-
-  if (name === 'apps')     loadApps();
-  if (name === 'files')    loadFiles(currentPath);
+  document.querySelectorAll('.dock-btn').forEach(b => b.classList.remove('active'));
+  const scr = $(name + '-screen'); if (scr) scr.classList.add('active');
+  const btn = $('dock-' + name); if (btn) btn.classList.add('active');
+  if (name === 'share') loadShares();
   if (name === 'settings') loadSettings();
 }
 
-// ── AI Chat ─────────────────────────────────────────────────────────────────
-function addMsg(role, text) {
-  const msgs = document.getElementById('messages');
-  const now  = new Date();
-  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-
-  const div  = document.createElement('div');
-  div.className = 'msg ' + role;
-  div.innerHTML = `
-    <div class="bubble">${text.replace(/\n/g,'<br>')}</div>
-    <span class="msg-time">${time}</span>
-  `;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-  return div;
-}
-
-function showTyping() {
-  const msgs = document.getElementById('messages');
-  const div = document.createElement('div');
-  div.className = 'msg ai'; div.id = 'typing-indicator';
-  div.innerHTML = '<div class="bubble typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-function hideTyping() {
-  const t = document.getElementById('typing-indicator');
-  if (t) t.remove();
-}
-
-async function sendMessage() {
-  const input = document.getElementById('chat-input');
-  const btn   = document.getElementById('send-btn');
-  const text  = input.value.trim();
-  if (!text) return;
-
-  input.value = ''; input.style.height = 'auto';
-  btn.disabled = true;
-  addMsg('user', text);
-  chatHistory.push({role:'user', content: text});
-
-  showTyping();
+/* ── status polling ── */
+async function refreshStatus() {
   try {
-    const resp = await fetch(API + '/ai.sh', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: text, history: chatHistory.slice(-10)})
-    });
-    hideTyping();
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const data = await resp.json();
-    const reply = data.reply || data.error || 'No response';
-    addMsg('ai', reply);
-    chatHistory.push({role:'assistant', content: reply});
-  } catch(e) {
-    hideTyping();
-    if (!aiOnline) {
-      addMsg('ai', '⚠️ AI is offline.\n\nMake sure llama-server is running on your Mac:\n<code>llama-server -m /path/to/model.gguf --host 0.0.0.0 --port 8080</code>');
-    } else {
-      addMsg('ai', '⚠️ Error: ' + e.message);
-    }
+    const r = await fetch('/cgi-bin/status.sh'); const s = await r.json();
+    $('sb-net').textContent = s.network || 'NET';
+    $('ai-dot').className = 'dot' + (s.llm_online ? '' : ' off');
+    $('sb-ai').textContent = s.llm_online ? 'AI' : 'AI!';
+    $('model-name').textContent = s.llm_online ? (s.llm_mode === 'on-device' ? 'Local · Qwen 1.5B' : 'Host fallback') : 'offline';
+    $('sb-node').textContent = 'node ' + String(s.node_id||'—').slice(0,8);
+    $('s-node-id').textContent = s.node_id || '—';
+    $('s-username').textContent = s.username || 'user';
+    $('s-status').textContent = s.llm_online ? 'online' : 'offline';
+    $('s-tunnel').textContent = s.tunnel || '—';
+  } catch(e) { $('sb-net').textContent='OFF'; $('net-dot').className='dot off'; }
+}
+setInterval(refreshStatus, 8000); refreshStatus();
+
+/* ── chat ── */
+let history = [];
+function addMsg(role, text, tool) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + role;
+  const b = document.createElement('div');
+  b.className = 'bubble'; b.textContent = text;
+  wrap.appendChild(b);
+  if (tool) {
+    const t = document.createElement('div');
+    t.className = 'toolchip'; t.textContent = '⚡ ' + tool;
+    wrap.appendChild(t);
   }
-  btn.disabled = false;
-  input.focus();
+  const tm = document.createElement('span');
+  tm.className = 'msg-time';
+  tm.textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  wrap.appendChild(tm);
+  $('messages').appendChild(wrap);
+  $('messages').scrollTop = $('messages').scrollHeight;
+  return wrap;
 }
-
-function quickAsk(text) {
-  document.getElementById('chat-input').value = text;
-  sendMessage();
-  switchScreen('chat');
+function quickAsk(t){ $('chat-input').value = t; sendMessage(); }
+function runCmdInChat(c){ addMsg('user', c); fetch('/cgi-bin/cmd.sh',{method:'POST',body:JSON.stringify({cmd:c.split(' ').slice(0,2).join(' ')})}).then(r=>r.json()).then(j=>addMsg('ai', j.output||j.reply||'(no output)','shell')); }
+async function sendMessage() {
+  const inp = $('chat-input');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+  addMsg('user', msg);
+  $('typing').style.display = 'block';
+  try {
+    const r = await fetch('/cgi-bin/ai.sh', {
+      method:'POST',
+      body: JSON.stringify({message: msg, history: history.slice(-6)})
+    });
+    const j = await r.json();
+    $('typing').style.display = 'none';
+    addMsg('ai', j.reply || '(empty response)', j.tool);
+    history.push({role:'user', text:msg}, {role:'assistant', text:j.reply||''});
+  } catch(e) {
+    $('typing').style.display = 'none';
+    addMsg('ai', 'Connection error: ' + e.message);
+  }
 }
-
-// Auto-resize textarea
-document.getElementById('chat-input').addEventListener('input', function() {
-  this.style.height = 'auto';
-  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-});
-document.getElementById('chat-input').addEventListener('keydown', function(e) {
+$('chat-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
+$('first-msg-time').textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
-// ── Run a shell command via API ──────────────────────────────────────────────
-async function runCmd(cmd) {
+/* ── share app ── */
+async function loadShares() {
   try {
-    const r = await fetch(API + '/cmd.sh', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({cmd})
+    const r = await fetch('/cgi-bin/share_list.sh'); const d = await r.json();
+    $('share-tunnel-badge').textContent = 'tunnel: ' + (d.tunnel||'stopped');
+    $('s-tunnel').textContent = d.tunnel;
+    const list = $('share-list');
+    list.innerHTML = '';
+    const shares = (d.index && d.index.shares) || [];
+    if (!shares.length) { list.innerHTML = '<div class="empty-hint">Nothing shared yet.<br>Create your first share above ☝️</div>'; return; }
+    shares.forEach(sh => {
+      const card = document.createElement('div');
+      card.className = 'share-card';
+      const mode = sh.mode || 'public';
+      card.innerHTML = `
+        <div class="row1">
+          <span class="mode-badge mode-${mode}">${mode.toUpperCase()}</span>
+          <span class="share-title">${sh.title||sh.file}</span>
+        </div>
+        <div class="share-meta">${String(sh.cid).slice(0,20)}… · ${sh.file||''}</div>
+        <div class="share-actions">
+          <button class="mini-btn" onclick="copyCID('${sh.cid}')">Copy CID</button>
+          <button class="mini-btn danger" onclick="revokeShare('${sh.cid}')">Revoke</button>
+        </div>`;
+      list.appendChild(card);
     });
-    const d = await r.json();
-    toast(d.output ? d.output.slice(0,60) : 'Done');
-  } catch(e) { toast('Error: ' + e.message); }
+  } catch(e) { $('share-list').innerHTML = '<div class="empty-hint">Failed to load shares</div>'; }
+}
+function copyCID(cid){ navigator.clipboard && navigator.clipboard.writeText(cid); alert('CID copied:\n'+cid.slice(0,24)+'…'); }
+async function createShare() {
+  const file = $('sh-file').value.trim();
+  if (!file) { $('sh-link').style.display='block'; $('sh-link').textContent='Enter a file path first'; return; }
+  const p = new URLSearchParams({
+    file, mode: $('sh-mode').value,
+    recipients: $('sh-recip').value.trim(),
+    expires: $('sh-exp').value.trim() || '0',
+    maxdl: $('sh-maxdl').value.trim() || '0'
+  });
+  const r = await fetch('/cgi-bin/share_create.sh', {method:'POST', body: p.toString()});
+  const j = await r.json();
+  const out = $('sh-link');
+  out.style.display = 'block';
+  out.textContent = j.link ? ('LINK: ' + j.link) : ('output: ' + (j.output||j.error||'?'));
+  loadShares();
+}
+async function revokeShare(cid) {
+  if (!confirm('Revoke this share permanently?')) return;
+  await fetch('/cgi-bin/share_revoke.sh', {method:'POST', body:'cid='+cid});
+  loadShares();
 }
 
-// ── Apps Screen ──────────────────────────────────────────────────────────────
-const BUILTIN_APPS = [
-  { name:'YouTube',   icon:'▶',  color:'#dc2626', url:'https://m.youtube.com' },
-  { name:'Netflix',   icon:'N',  color:'#dc2626', url:'https://www.netflix.com' },
-  { name:'Gmail',     icon:'✉',  color:'#2563eb', url:'https://mail.google.com' },
-  { name:'Maps',      icon:'📍', color:'#16a34a', url:'https://maps.google.com' },
-  { name:'Spotify',   icon:'♪',  color:'#16a34a', url:'https://open.spotify.com' },
-  { name:'Reddit',    icon:'🔴', color:'#ea580c', url:'https://old.reddit.com' },
-  { name:'Twitter',   icon:'🐦', color:'#0284c7', url:'https://mobile.twitter.com' },
-  { name:'GitHub',    icon:'⚙',  color:'#374151', url:'https://github.com' },
-  { name:'Wikipedia', icon:'W',  color:'#374151', url:'https://en.m.wikipedia.org' },
-  { name:'News',      icon:'📰', color:'#1d4ed8', url:'https://news.google.com' },
-  { name:'WhatsApp',  icon:'💬', color:'#16a34a', url:'https://web.whatsapp.com' },
-  { name:'Telegram',  icon:'✈',  color:'#0284c7', url:'https://web.telegram.org' },
-  { name:'Amazon',    icon:'🛒', color:'#d97706', url:'https://www.amazon.com' },
-  { name:'Flipkart',  icon:'🛒', color:'#2563eb', url:'https://www.flipkart.com' },
-  { name:'Zomato',    icon:'🍔', color:'#dc2626', url:'https://www.zomato.com' },
-  { name:'Swiggy',    icon:'🍔', color:'#d97706', url:'https://www.swiggy.com' },
-  { name:'IRCTC',     icon:'🚂', color:'#1d4ed8', url:'https://m.irctc.co.in' },
-  { name:'Paytm',     icon:'💳', color:'#1d4ed8', url:'https://paytm.com' },
-  { name:'Translate', icon:'🌐', color:'#2563eb', url:'https://translate.google.com' },
-  { name:'Calendar',  icon:'📅', color:'#dc2626', url:'https://calendar.google.com' },
-  { name:'Drive',     icon:'💾', color:'#d97706', url:'https://drive.google.com' },
-  { name:'Weather',   icon:'☁',  color:'#0284c7', url:'https://wttr.in' },
-  { name:'HN',        icon:'🟠', color:'#c2410c', url:'https://news.ycombinator.com' },
-  { name:'DDG',       icon:'🔍', color:'#de5833', url:'https://lite.duckduckgo.com/lite/' },
-];
-
-let allApps = [...BUILTIN_APPS];
-
-function renderApps(apps) {
-  const container = document.getElementById('app-grid-container');
-  if (!apps.length) {
-    container.innerHTML = '<div style="text-align:center;color:var(--text3);padding:24px">No apps found</div>';
-    return;
-  }
-  container.innerHTML = `
-    <div class="app-section">
-      <div class="app-grid">
-        ${apps.map(app => `
-          <div class="app-icon" onclick="openApp('${app.url}','${app.name}')">
-            <div class="app-icon-img" style="background:${app.color}20;border:1px solid ${app.color}40">
-              <span style="color:${app.color}">${app.icon}</span>
-            </div>
-            <span>${app.name}</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function loadApps() { renderApps(allApps); }
-function filterApps(q) {
-  if (!q) { renderApps(allApps); return; }
-  renderApps(allApps.filter(a => a.name.toLowerCase().includes(q.toLowerCase())));
-}
-
-function openApp(url, name) {
-  toast('Opening ' + name + '...');
-  // Navigate in the current tab/window to avoid spawning multiple Chromium processes/windows.
-  // The main agent GUI (this chat/home) stays the primary interface.
-  // For separate web flows, the agent shell can use browser-ctl (CDP) to drive navigation in the background or new tabs if supported.
-  window.location.href = url;
-}
-
-// ── Files Screen ──────────────────────────────────────────────────────────────
-const FILE_ICONS = {
-  dir:   '📁',
-  txt:   '📄', md: '📄', sh: '⚙', py: '🐍', js: '📜', html: '🌐',
-  json:  '{}', conf: '⚙', log: '📋',
-  jpg: '🖼', jpeg: '🖼', png: '🖼', gif: '🖼', svg: '🖼',
-  mp3: '🎵', wav: '🎵', ogg: '🎵', flac: '🎵',
-  mp4: '🎬', mkv: '🎬', avi: '🎬', webm: '🎬',
-  pdf: '📕', zip: '📦', gz: '📦', tar: '📦',
-  gguf: '🤖', bin: '⬛',
-};
-
-function fileIcon(name, isDir) {
-  if (isDir) return FILE_ICONS.dir;
-  const ext = name.split('.').pop().toLowerCase();
-  return FILE_ICONS[ext] || '📄';
-}
-
-async function loadFiles(path) {
-  currentPath = path;
-  document.getElementById('file-path').textContent = path;
-  const list = document.getElementById('file-list');
-  list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3)">Loading...</div>';
-
+/* ── net search ── */
+async function netSearch() {
+  const q = $('ns-q').value.trim();
+  if (!q) return;
+  $('ns-empty').style.display = 'none';
+  $('ns-results').innerHTML = '<div class="empty-hint">Searching the network…</div>';
   try {
-    const r = await fetch(API + '/files.sh?path=' + encodeURIComponent(path));
-    const data = await r.json();
-    if (data.error) { list.innerHTML = `<div style="padding:24px;color:var(--red)">${data.error}</div>`; return; }
-
-    const items = data.files || [];
-    if (!items.length) {
-      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3)">(empty)</div>';
+    const r = await fetch('/cgi-bin/netsearch.sh?q=' + encodeURIComponent(q));
+    const d = await r.json();
+    $('ns-results').innerHTML = '';
+    if (!d.results || !d.results.length) {
+      $('ns-results').innerHTML = '<div class="empty-hint">Nothing found on the network yet.</div>';
       return;
     }
-
-    list.innerHTML = items.map(f => `
-      <div class="file-item" onclick="${f.type==='dir' ? `loadFiles('${f.path}')` : `fileAction('${f.path}','${f.name}')`}">
-        <div class="file-icon">${fileIcon(f.name, f.type==='dir')}</div>
-        <div class="file-info">
-          <div class="file-name">${f.name}</div>
-          <div class="file-meta">${f.type==='dir' ? 'Directory' : (f.size||'')}</div>
+    d.results.forEach(rec => {
+      const card = document.createElement('div');
+      card.className = 'share-card';
+      card.innerHTML = `
+        <div class="row1">
+          <span class="mode-badge mode-public">PUBLIC</span>
+          <span class="share-title">${rec.title||'(untitled)'}</span>
         </div>
-        <div class="file-action">${f.type==='dir' ? '›' : '⋯'}</div>
-      </div>
-    `).join('');
-
-    // Add back button
-    if (path !== '/') {
-      const parent = path.replace(/\/[^/]+\/?$/, '') || '/';
-      list.insertAdjacentHTML('afterbegin', `
-        <div class="file-item" onclick="loadFiles('${parent}')">
-          <div class="file-icon">⬆️</div>
-          <div class="file-info"><div class="file-name">.. (up)</div></div>
-        </div>
-      `);
-    }
+        <div class="share-meta">${rec.type||'?'} · ${rec.size_kb||'?'}KB · via ${rec.relay_url||'?'}<br>cid ${rec.cid}</div>`;
+      card.onclick = () => { window.open((rec.relay_url||'').replace('10.0.2.2','127.0.0.1') + '/f/' + rec.node_id + '/pub/' + rec.cid + '/download', '_blank'); };
+      $('ns-results').appendChild(card);
+    });
   } catch(e) {
-    list.innerHTML = `<div style="padding:24px;color:var(--red)">Error: ${e.message}</div>`;
+    $('ns-results').innerHTML = '<div class="empty-hint">Search failed: '+e.message+'</div>';
   }
 }
 
-function fileAction(path, name) {
-  const ext = name.split('.').pop().toLowerCase();
-  const isMedia = ['mp3','wav','ogg','flac','mp4','mkv','webm','avi'].includes(ext);
-  const isImg   = ['jpg','jpeg','png','gif','svg','webp'].includes(ext);
-  const isText  = ['txt','md','sh','py','js','json','html','conf','log'].includes(ext);
-
-  if (isMedia) {
-    const url = API.replace('/cgi-bin','') + '/media/' + path;
-    toast('Opening media player...');
-    window.open(url, '_blank');
-  } else if (isImg) {
-    window.open(API.replace('/cgi-bin','') + '/file/' + path, '_blank');
-  } else if (isText) {
-    viewFile(path, name);
-  } else {
-    if (confirm('Share "' + name + '" publicly?')) {
-      runCmd('share ' + path + ' public').then(() => toast('Shared!'));
-    }
-  }
-}
-
-async function viewFile(path, name) {
+/* ── files ── */
+async function loadFiles(path) {
+  $('file-path').textContent = path || '/';
   try {
-    const r = await fetch(API + '/read.sh?path=' + encodeURIComponent(path));
+    const r = await fetch('/cgi-bin/files.sh?path=' + encodeURIComponent(path||'/'));
     const d = await r.json();
-    const content = d.content || d.error;
-    // Show in chat
-    quickAsk('Summarize or explain this file:\n\n' + content.slice(0, 2000));
-    switchScreen('chat');
-  } catch(e) { toast('Cannot read file'); }
+    const list = $('file-list');
+    list.innerHTML = '';
+    (d.files||[]).forEach(f => {
+      const row = document.createElement('div');
+      row.className = 'file-row';
+      row.innerHTML = `<span>${f.type==='dir'?'📁':'📄'}</span><span class="fname">${f.name}</span><span class="fsize">${f.size||''}</span>`;
+      row.onclick = () => f.type==='dir' ? loadFiles(f.path) : quickAsk('read file '+f.path);
+      list.appendChild(row);
+    });
+  } catch(e){}
 }
 
-// ── Settings ─────────────────────────────────────────────────────────────────
-async function loadSettings() {
-  try {
-    const r = await fetch(API + '/status.sh');
-    const d = await r.json();
-    document.getElementById('s-node-id').textContent  = (d.node_id||'—').slice(0,12)+'...';
-    document.getElementById('s-username').textContent = d.username || 'user';
-    document.getElementById('s-status').textContent   = d.llm_online ? '🟢 Online' : '🔴 Offline';
-    document.getElementById('s-model').textContent    = d.model || 'Qwen2.5 1.5B';
-  } catch(e) {}
+/* ── settings helpers ── */
+function loadSettings(){ refreshStatus(); }
+function runCmd(cmd){
+  fetch('/cgi-bin/cmd.sh',{method:'POST',body:JSON.stringify({cmd})})
+    .then(r=>r.json()).then(j=>alert(cmd+'\n\n'+(j.output||'done')));
 }
 
-// ── Startup ───────────────────────────────────────────────────────────────────
-async function checkAI() {
-  try {
-    const r = await fetch(API + '/status.sh', {signal: AbortSignal.timeout(5000)});
-    const d = await r.json();
-    aiOnline = d.llm_online;
-    const dot = document.getElementById('net-dot');
-    const lbl = document.getElementById('ai-status');
-    if (aiOnline) {
-      dot.className = 'status-dot';
-      lbl.textContent = (d.model||'AI') + ' ready';
-      lbl.style.color = 'var(--green)';
-    } else {
-      dot.className = 'status-dot offline';
-      lbl.textContent = 'AI offline';
-      lbl.style.color = 'var(--red)';
-    }
-    document.getElementById('node-id').textContent = (d.node_id||'').slice(0,8);
-    document.getElementById('model-name').textContent = aiOnline ? (d.model||'Qwen2.5') + ' ✓' : 'Offline — check model disk';
-  } catch(e) {
-    aiOnline = false;
-    document.getElementById('net-dot').className = 'status-dot offline';
-    document.getElementById('ai-status').textContent = 'AI offline';
-  }
-}
-
-// Boot sequence
-async function boot() {
-  const ws = document.getElementById('welcome-status');
-  const wl = document.getElementById('wlogo');
-
-  ws.textContent = 'Loading identity...';
-  await new Promise(r => setTimeout(r, 600));
-
-  ws.textContent = 'Connecting to AI...';
-  await checkAI();
-  await new Promise(r => setTimeout(r, 400));
-
-  ws.textContent = aiOnline ? '✓ AI connected' : '⚠ AI offline (start llama-server)';
-  wl.className = 'welcome-logo ' + (aiOnline ? 'ready' : '');
-  wl.textContent = aiOnline ? '✓' : '🤖';
-
-  await new Promise(r => setTimeout(r, 800));
-  document.getElementById('welcome').classList.add('gone');
-
-  // Poll AI status every 30s
-  setInterval(checkAI, 30000);
-}
-
-boot();
+/* boot */
+setTimeout(()=>{ loadShares().catch(()=>{}); }, 600);
 </script>
 </body>
 </html>

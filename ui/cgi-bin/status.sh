@@ -34,6 +34,11 @@ UPTIME=$(cat /proc/uptime 2>/dev/null | cut -d. -f1 || echo 0)
 UPTIME_H=$(( UPTIME / 3600 ))
 UPTIME_M=$(( (UPTIME % 3600) / 60 ))
 
+TUNNEL="stopped"
+[ -f "$AGENTIC_DIR/shares/tunnel.pid" ] && kill -0 "$(cat $AGENTIC_DIR/shares/tunnel.pid)" 2>/dev/null && TUNNEL="running"
+NET="online"
+ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || NET="offline"
+
 cat <<EOF
 {
   "llm_online":     $LLM_ONLINE,
@@ -46,6 +51,8 @@ cat <<EOF
   "interactions":   $LOG_LINES,
   "notes":          $NOTES_COUNT,
   "uptime":         "${UPTIME_H}h ${UPTIME_M}m",
-  "version":        "0.2.0"
+  "tunnel":         "$TUNNEL",
+  "network":        "$NET",
+  "version":        "0.2.0-beta"
 }
 EOF
