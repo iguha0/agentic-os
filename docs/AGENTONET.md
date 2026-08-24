@@ -1,5 +1,5 @@
 # AgentoNet — Architecture & Protocol Spec
-# Agentic OS v0.1 — Decentralized Sharing Layer
+# PryzentOS v0.1 — Decentralized Sharing Layer
 
 ## Philosophy
 

@@ -1,5 +1,5 @@
 /*
- * Agentic OS — shell2
+ * PryzentOS — shell2
  * ====================
  * A full-featured AI shell with NO llama.cpp dependency.
  * Calls llama-server on-device (127.0.0.1:8080) or host fallback in dev mode.
@@ -514,7 +514,7 @@ static int http_get(const char *host, int port, const char *path,
     int req_len = snprintf(req, sizeof(req),
         "GET %s HTTP/1.1\r\n"
         "Host: %s:%d\r\n"
-        "User-Agent: AgenticOS/1.0\r\n"
+        "User-Agent: PryzentOS/1.0\r\n"
         "Accept: application/json\r\n"
         "Connection: close\r\n"
         "\r\n",
@@ -610,7 +610,7 @@ static void build_prompt(const char *query, char *prompt_out, int prompt_len) {
     /* 5. Build system prompt */
     char sysprompt[MAX_PROMPT / 2];
     int sp = snprintf(sysprompt, sizeof(sysprompt),
-        "You are Agentic OS — an intelligent operating system shell. "
+        "You are PryzentOS — an intelligent operating system shell. "
         "The user's name is %s. You help them accomplish real tasks on the user's device "
         "by running commands and tools. Be concise and direct.\n\n"
         "Output ONLY ONE of these (never mix in the same response):\n"
@@ -1068,7 +1068,7 @@ static void tool_web_read(const char *url, char *result, size_t reslen) {
 
     char cmd[1200];
     snprintf(cmd, sizeof(cmd),
-        "wget -q -O - --timeout=8 --tries=1 -U 'AgenticOS/1.0' '%s' 2>/dev/null "
+        "wget -q -O - --timeout=8 --tries=1 -U 'PryzentOS/1.0' '%s' 2>/dev/null "
         "| head -c 200000 || true",
         fullurl);
 
@@ -1397,7 +1397,7 @@ static int dispatch_tool(const char *line, char *result, size_t reslen) {
 
         FILE *f = fopen(tool_path, "w");
         if (!f) { if (result) snprintf(result, reslen, "could not write %s", tool_path); return 1; }
-        fprintf(f, "#!/bin/sh\n# %s — %s\n# Created by Agentic OS zero-shot tool builder\n\n",
+        fprintf(f, "#!/bin/sh\n# %s — %s\n# Created by PryzentOS zero-shot tool builder\n\n",
                 name, desc[0] ? desc : "custom tool");
         fputs(script_start, f);
         fputs("\n", f);
@@ -2026,7 +2026,7 @@ static int handle_builtin(const char *input) {
     }
     if (strcmp(input, "help") == 0 || strcmp(input, "!help") == 0) {
         printf(
-            "\nAgentic OS — just type what you want\n\n"
+            "\nPryzentOS — just type what you want\n\n"
             "Direct commands:\n"
             "  remember <key>=<value>   save to memory\n"
             "  recall <key>             retrieve from memory\n"

@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
 
-# Agentic OS Shell Build Script
+# PryzentOS Shell Build Script
 # Builds the agentic shell for aarch64-linux-musl target
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "========================================="
-echo "  Agentic OS Shell Build"
+echo "  PryzentOS Shell Build"
 echo "========================================="
 
 # Check for cross-compiler

@@ -1,5 +1,5 @@
 /*
- * agbrowser.c — Agentic OS Terminal Browser
+ * agbrowser.c — PryzentOS Terminal Browser
  * ==========================================
  * A lightweight interactive text browser for the terminal.
  *

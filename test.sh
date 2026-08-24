@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Agentic OS QEMU Test — boot with model disk image
+# PryzentOS QEMU Test — boot with model disk image
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -10,7 +10,7 @@ INITRD="initramfs.cpio"
 MODEL_DISK="model-disk.img"
 
 echo "========================================="
-echo "  Agentic OS QEMU Test"
+echo "  PryzentOS QEMU Test"
 echo "========================================="
 
 # Check required files

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Create the writable ext4 disk used for Agentic OS memory and identity.
+# Create the writable ext4 disk used for PryzentOS memory and identity.
 
 set -euo pipefail
 

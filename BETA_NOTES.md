@@ -1,4 +1,4 @@
-# Agentic OS v0.2.0-beta — Release Notes
+# PryzentOS v0.2.0-beta — Release Notes
 
 **Branch:** `beta-release` · **Date:** 2026-08-24 · **Status: BETA**
 
@@ -122,5 +122,5 @@ netsearch photos         # search shared content
 
 ## License
 
-Agentic OS — Copyright (C) Indrajit Guha — **AGPL-3.0** (see [LICENSE](LICENSE)).
+PryzentOS — Copyright (C) Indrajit Guha — **AGPL-3.0** (see [LICENSE](LICENSE)).
 Model weights (Qwen2.5) are Apache-2.0, fetched separately via `download-model.sh`.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build a graphical Agentic OS initramfs without modifying the text rootfs.
+# Build a graphical PryzentOS initramfs without modifying the text rootfs.
 
 set -euo pipefail
 
@@ -56,6 +56,7 @@ apk add --root /rootfs --initdb --no-cache \
     dbus-x11 \
     fontconfig \
     ttf-dejavu \
+    font-noto-emoji \
     ttf-freefont \
     font-misc-misc \
     openssl \
@@ -118,7 +119,7 @@ apk add --root /rootfs --no-cache \
 apk add --no-cache \
     python3 \
     py3-qrcode \
-    py3-pil \
+    py3-pillow \
     py3-setuptools \
     py3-pip \
     git \
@@ -162,12 +163,12 @@ mkdir -p "$GRAPHICAL_ROOTFS/usr/local/share/agentic-ui/cgi-bin"
 # SearXNG runtime config. secret_key is filled in at boot by agentic-init.
 mkdir -p "$GRAPHICAL_ROOTFS/etc/searxng"
 cat > "$GRAPHICAL_ROOTFS/etc/searxng/settings.yml" <<'SEARXCONF'
-# Agentic OS — SearXNG settings. Inherits SearXNG defaults (all standard
+# PryzentOS — SearXNG settings. Inherits SearXNG defaults (all standard
 # engines incl. Google, Bing, Brave, DuckDuckGo) and overrides only what we need.
 use_default_settings: true
 
 general:
-  instance_name: "Agentic OS Search"
+  instance_name: "PryzentOS Search"
   debug: false
 
 server:
@@ -212,6 +213,6 @@ echo "Packing $OUTPUT..."
     find . -print0 | cpio --null -o -H newc > "$OUTPUT"
 )
 
-echo "Built graphical Agentic OS:"
+echo "Built graphical PryzentOS:"
 ls -lh "$OUTPUT"
 echo "Next: ./create-data-disk.sh && ./launch-graphical.sh"

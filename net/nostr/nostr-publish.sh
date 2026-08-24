@@ -30,7 +30,7 @@ case "$CMD" in
     profile)
         NAME=$(grep '"name"' /usr/share/agentic/profile.json 2>/dev/null \
             | sed 's/.*"name": *"\([^"]*\)".*/\1/' | head -1)
-        CONTENT="{\"name\":\"${NAME:-Agentic OS User}\",\"about\":\"Agentic OS node — the home screen is an agent.\"}"
+        CONTENT="{\"name\":\"${NAME:-PryzentOS User}\",\"about\":\"PryzentOS node — the home screen is an agent.\"}"
         exec /usr/local/bin/nostr-ws.py profile "$CONTENT"
         ;;
     key|keygen)

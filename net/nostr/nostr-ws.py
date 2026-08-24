@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-nostr-ws.py — Nostr WebSocket publisher for Agentic OS
+nostr-ws.py — Nostr WebSocket publisher for PryzentOS
 
 Publishes signed Nostr events to relays via real WebSocket connections.
 This companion to nostr-publish.sh handles the actual ws:// transport
@@ -292,7 +292,7 @@ def make_event(kind: int, content: str, tags: list) -> dict:
 
 def cmd_post(text: str) -> bool:
     """Sign+publish a kind-1 text note with the real nostr identity."""
-    event = make_event(1, text, [["t", "agentic-os"]])
+    event = make_event(1, text, [["t", "pryzentos"]])
     print(f"[nostr] event {event['id'][:16]}… pub {event['pubkey'][:16]}…")
     ok = cmd_publish(json.dumps(event))
     if ok:
@@ -425,7 +425,7 @@ if __name__ == "__main__":
         sys.exit(0 if ok else 1)
 
     elif cmd == "profile":
-        content = sys.argv[2] if len(sys.argv) > 2 else '{"name":"Agentic OS User"}'
+        content = sys.argv[2] if len(sys.argv) > 2 else '{"name":"PryzentOS User"}'
         event = make_event(0, content, [])
         print(f"[nostr] profile event {event['id'][:16]}…")
         ok = cmd_publish(json.dumps(event))

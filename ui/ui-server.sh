@@ -1,5 +1,5 @@
 #!/bin/sh
-# ui-server.sh — start the Agentic OS web UI server
+# ui-server.sh — start the PryzentOS web UI server
 # Uses busybox httpd (already in Alpine rootfs)
 #
 # Serves:

@@ -1,5 +1,5 @@
 /*
- * Agentic Shell — the only "app" in Agentic OS.
+ * Agentic Shell — the only "app" in PryzentOS.
  * Reads intent from stdin, sends to local model, executes answer as shell.
  * No app drawer, no home screen. This is the home screen.
  */

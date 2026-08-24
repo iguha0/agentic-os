@@ -1,5 +1,5 @@
 /*
- * aghttpd.c — minimal HTTP/1.0 server for Agentic OS
+ * aghttpd.c — minimal HTTP/1.0 server for PryzentOS
  * Serves static files and executes CGI scripts (cgi-bin/).
  * Single-threaded, fork-per-request.
  * Compile: aarch64-linux-gnu-gcc -static -O2 -o aghttpd aghttpd.c

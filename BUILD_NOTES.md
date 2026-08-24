@@ -1,4 +1,4 @@
-# Agentic OS Build Notes
+# PryzentOS Build Notes
 
 ## Build Issue Resolution
 

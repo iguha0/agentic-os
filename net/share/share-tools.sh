@@ -142,7 +142,7 @@ sharing is fine to proceed without confirmation since it is access-controlled.
 if [ "${1:-}" = "test" ]; then
     echo "Testing share tools..."
     echo "Creating test file..."
-    echo "Hello from Agentic OS" > /tmp/test-share.txt
+    echo "Hello from PryzentOS" > /tmp/test-share.txt
     tool_share "file=/tmp/test-share.txt" "mode=public"
     echo ""
     tool_share "file=/tmp/test-share.txt" "mode=selective" "recipients=alice,bob"

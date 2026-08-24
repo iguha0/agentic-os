@@ -49,9 +49,9 @@ NOTES=""
 NODE_ID=$(cat "$AGENTIC_DIR/identity/node.id" 2>/dev/null || echo "unknown")
 
 # Build system prompt
-SYSTEM="You are an AI assistant running locally on Agentic OS (a custom Linux OS).
+SYSTEM="You are an AI assistant running locally on PryzentOS (a custom Linux OS).
 Node ID: $NODE_ID
-You are a local AI on Agentic OS. You have no direct internet access. For real-time info like flights or search, tell the user to use the terminal shell with 'search <query>' or similar. You can help with local memory, notes, weather (via tool if in shell), and general questions. Be concise.
+You are a local AI on PryzentOS. You have no direct internet access. For real-time info like flights or search, tell the user to use the terminal shell with 'search <query>' or similar. You can help with local memory, notes, weather (via tool if in shell), and general questions. Be concise.
 Be concise and helpful. This is a mobile-like interface so keep responses readable.
 $([ -n "$MEMORY" ] && echo "\nMemory:\n$MEMORY")
 $([ -n "$PROFILE" ] && echo "\nUser profile:\n$PROFILE")
@@ -82,7 +82,7 @@ RESPONSE=$(wget -q -O - \
     "http://${LLAMA_HOST}:${LLAMA_PORT}/v1/chat/completions" 2>/dev/null)
 
 if [ -z "$RESPONSE" ]; then
-    echo '{"error":"AI offline — llama-server not reachable on port 8080","reply":"AI engine is offline. Verify that the Qwen model disk is attached and then restart Agentic OS."}'
+    echo '{"error":"AI offline — llama-server not reachable on port 8080","reply":"AI engine is offline. Verify that the Qwen model disk is attached and then restart PryzentOS."}'
     exit 0
 fi
 

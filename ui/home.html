@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Agentic OS</title>
+<title>PryzentOS — your agent is running</title>
 <style>
 :root {
   --bg:         #07070c;
@@ -244,6 +244,7 @@ body::before {
 
 <div id="statusbar">
   <div class="left">
+    <span style="font-weight:800;letter-spacing:.5px">Pryzent<span style="color:var(--accent2)">OS</span></span>
     <span class="dot" id="net-dot"></span><span class="chip" id="sb-net">NET</span>
     <span class="dot" id="ai-dot"></span><span class="chip" id="sb-ai">AI</span>
   </div>
@@ -271,7 +272,7 @@ body::before {
       <div class="app-icon" onclick="quickAsk('remember ')"><div class="glyph">🧠</div><div class="label">Memory</div></div>
       <div class="app-icon" onclick="switchScreen('settings')"><div class="glyph">⚙️</div><div class="label">Settings</div></div>
       <div class="app-icon" onclick="switchScreen('store')"><div class="glyph">🛍️</div><div class="label">Store</div></div>
-      <div class="app-icon" onclick="makeApp()"><div class="glyph" style="background:linear-gradient(135deg,var(--accent),var(--blue));color:#fff">＋</div><div class="label">Add App</div></div>
+      <div class="app-icon" onclick="makeApp()"><div class="glyph" style="background:linear-gradient(135deg,var(--accent),var(--blue));color:#fff">+</div><div class="label">Add App</div></div>
       <div id="user-apps-slot" style="display:contents"></div>
       <div class="app-icon" onclick="quickAsk('What can you do?')"><div class="glyph">✨</div><div class="label">Assistant</div></div>
     </div>
@@ -282,7 +283,7 @@ body::before {
     <div id="chat-header">
       <div class="ai-avatar">🤖</div>
       <div class="ai-info">
-        <h3>Agentic AI</h3>
+        <h3>Pryzent AI</h3>
         <p id="model-name">Connecting...</p>
       </div>
     </div>
@@ -365,7 +366,7 @@ I can remember things, browse the web, take notes, share files publicly / with s
       <button class="primary-btn" style="width:auto;padding:9px 18px" onclick="storeSearch()">Search</button>
     </div>
     <div id="store-body">
-      <div class="empty-hint" id="store-empty">Browse thousands of FOSS Android apps.<br>APKs download to your inbox — sideload onto any Android device.<br><br>Note: Agentic OS runs no Android binaries; downloads are take-away artifacts.</div>
+      <div class="empty-hint" id="store-empty">Browse thousands of FOSS Android apps.<br>APKs download to your inbox — sideload onto any Android device.<br><br>Note: PryzentOS runs no Android binaries; downloads are take-away artifacts.</div>
       <div id="store-results"></div>
     </div>
   </div>
@@ -661,7 +662,7 @@ async function lightningInvoice(){
   const amt = parseInt($('ln-amt').value||'0');
   if(amt<1) { $('ln-out').style.display='block'; $('ln-out').textContent='Enter sats first'; return; }
   $('ln-out').style.display='block'; $('ln-out').textContent='Requesting invoice…';
-  const r = await fetch('/cgi-bin/lightning.sh',{method:'POST',body:'cmd=request&amount='+amt+'&memo=AgenticOS'});
+  const r = await fetch('/cgi-bin/lightning.sh',{method:'POST',body:'cmd=request&amount='+amt+'&memo=PryzentOS'});
   const j = await r.json();
   let html = '';
   if (j.svg) html += '<div style="background:#fff;padding:8px;border-radius:8px;width:180px">'+j.svg+'</div><br>';

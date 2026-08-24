@@ -1,5 +1,5 @@
 #!/bin/sh
-# Agentic OS — custom init.
+# PryzentOS — custom init.
 # Replaces /sbin/init. Mounts filesystems, mounts the model drive,
 # sets up the agent as PID 1, drops to agent shell.
 #
@@ -479,14 +479,14 @@ fi
 clear
 cat <<'BANNER'
 ================================================================
-  AGENTIC OS v0.3.0-beta — AgentoNet enabled
+  PRYZENTOS v0.3.0-beta — AgentoNet enabled
   A phone OS where the home screen is an agent.
   This is a real init — no Android, no systemd, just mine.
 ================================================================
 BANNER
 
 echo
-echo "Welcome to Agentic OS. The agent is your shell."
+echo "Welcome to PryzentOS. The agent is your shell."
 echo "Type what you want. Ctrl-D to exit. Type 'help' for commands."
 echo "AI commands: !local  !cloud  !auto  !keywords  !mode  !help"
 echo

@@ -1,4 +1,4 @@
-# Agentic OS Shell - Compilation Issue Fixed
+# PryzentOS Shell - Compilation Issue Fixed
 
 ## Problem
 The `agentic-shell` was not compiling for the aarch64-linux-musl target.

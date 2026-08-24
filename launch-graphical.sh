@@ -1,5 +1,5 @@
 #!/bin/bash
-# launch-graphical.sh — Boot Agentic OS with graphical display
+# launch-graphical.sh — Boot PryzentOS with graphical display
 #
 # Opens a QEMU window showing X11 + Openbox.
 # - Chromium kiosk home screen (local agent UI at :7080)
@@ -41,7 +41,7 @@ for f in "$KERNEL" "$INITRD" "$MODEL_DISK" "$DATA_DISK"; do
 done
 
 echo "═══════════════════════════════════════════════════════"
-echo "  Agentic OS — Graphical Mode"
+echo "  PryzentOS — Graphical Mode"
 echo "  X11 + Openbox + Chromium home (kiosk :7080) + full browser (CDP 9222)"
 echo "  + xterm running agentic-shell2"
 echo "═══════════════════════════════════════════════════════"

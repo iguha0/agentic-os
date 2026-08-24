@@ -1,5 +1,5 @@
 #!/bin/sh
-# workflows.sh — Agentic OS Web Automation Runner
+# workflows.sh — PryzentOS Web Automation Runner
 #
 # Executes multi-step workflows: a sequence of browser actions defined in JSON.
 # The agent (shell + LLM) creates and runs these to automate repetitive tasks:

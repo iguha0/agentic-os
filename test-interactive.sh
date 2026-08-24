@@ -23,7 +23,7 @@ else
 fi
 
 echo "========================================="
-echo "  Agentic OS — Interactive QEMU Test"
+echo "  PryzentOS — Interactive QEMU Test"
 echo "========================================="
 
 for f in "$KERNEL" "$INITRD" "$MODEL_DISK"; do
@@ -50,7 +50,7 @@ echo "Acceleration: $ACCEL_NAME"
 echo ""
 echo "Starting QEMU... (Ctrl+A then X to exit)"
 echo ""
-echo "  ┌─ Agentic OS UI ──────────────────────────────────────┐"
+echo "  ┌─ PryzentOS UI ──────────────────────────────────────┐"
 echo "  │  After the VM finishes loading, open in your browser:│"
 printf '  │  http://localhost:%-5s                                │\n' "$UI_PORT"
 echo "  └───────────────────────────────────────────────────────┘"

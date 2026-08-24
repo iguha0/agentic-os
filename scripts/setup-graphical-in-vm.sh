@@ -9,5 +9,5 @@ echo "  ./build-graphical-rootfs.sh"
 echo "  ./create-data-disk.sh"
 echo "  ./launch-graphical.sh"
 echo ""
-echo "This preserves the working Qwen boot path and persistent Agentic OS state."
+echo "This preserves the working Qwen boot path and persistent PryzentOS state."
 exit 1

@@ -1,5 +1,5 @@
 #!/bin/sh
-# credentials.sh — Secure credential storage for Agentic OS
+# credentials.sh — Secure credential storage for PryzentOS
 #
 # Stores and retrieves credentials (passwords, tokens, session cookies).
 # Credentials can be:

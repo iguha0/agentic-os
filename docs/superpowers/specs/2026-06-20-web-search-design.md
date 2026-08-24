@@ -1,4 +1,4 @@
-# Web Search for Agentic OS — Design Spec
+# Web Search for PryzentOS — Design Spec
 
 **Date:** 2026-06-20
 **Status:** Approved (design), pending implementation plan

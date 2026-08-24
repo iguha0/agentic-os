@@ -1,5 +1,5 @@
 #!/bin/sh
-# shortcuts.sh — web app shortcuts for Agentic OS
+# shortcuts.sh — web app shortcuts for PryzentOS
 #
 # Think of these as "app icons" for the terminal: named bookmarks that
 # open a URL in a terminal browser. No app store required.

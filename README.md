@@ -1,8 +1,8 @@
-# Agentic OS
+# PryzentOS
 
 **The home screen is an agent. The phone is a server.**
 
-Agentic OS is a from-scratch, AI-first operating system that boots in QEMU
+PryzentOS is a from-scratch, AI-first operating system that boots in QEMU
 (aarch64). A custom init replaces systemd; an agent shell is your primary
 interface; on-device LLM inference (Qwen2.5 via llama.cpp) powers everything;
 and **AgentoNet** turns the device into a self-sovereign server — share files

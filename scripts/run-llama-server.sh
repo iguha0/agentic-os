@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run llama.cpp server on the Mac host so the Agentic OS VM can reach it.
+# Run llama.cpp server on the Mac host so the PryzentOS VM can reach it.
 # The VM sees the host as 10.0.2.2 (QEMU user networking default).
 set -e
 

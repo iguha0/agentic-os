@@ -2,7 +2,7 @@
 """
 AgentoNet Relay v2 ("blind pipe")
 =================================
-NAT-traversal relay for Agentic OS. Devices behind NAT register a tunnel;
+NAT-traversal relay for PryzentOS. Devices behind NAT register a tunnel;
 anyone fetches their content through this relay without the relay ever
 understanding or storing it.
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 # agentic-shared — on-device content serving daemon
-# Runs inside Agentic OS. Serves files via busybox httpd.
+# Runs inside PryzentOS. Serves files via busybox httpd.
 # Called by the AI agent when user says "share X".
 #
 # Usage:

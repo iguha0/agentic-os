@@ -35,7 +35,7 @@ static int g_ai_mode_index = 0;
 static const char* g_ai_modes[] = {"auto", "local", "cloud", "keywords", NULL};
 
 static void print_help(void) {
-    printf("\nAgentic OS — just type what you want\n");
+    printf("\nPryzentOS — just type what you want\n");
     printf("\nSystem commands:\n");
     printf("  help                    this help\n");
     printf("  exit / quit             leave\n");

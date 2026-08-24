@@ -1,4 +1,4 @@
-# Agentic OS - AI Model Integration Plan
+# PryzentOS - AI Model Integration Plan
 
 ## Overview
 Integrate real AI inference into the agentic shell with:

@@ -1,5 +1,5 @@
 #!/bin/sh
-# distributed-search.sh — Agentic OS distributed node search engine
+# distributed-search.sh — PryzentOS distributed node search engine
 #
 # How it works:
 #   1. Each node maintains a local index of its content (files, shares, certs, notes)
@@ -22,7 +22,7 @@ SIGN_KEY_FILE="$AGENTIC_DIR/identity/node.key"
 # Nostr relays to query
 RELAYS="wss://relay.damus.io wss://nos.lol wss://relay.nostr.band"
 
-# Nostr kind for Agentic OS catalog events (30100 = addressable, one-per-node)
+# Nostr kind for PryzentOS catalog events (30100 = addressable, one-per-node)
 CATALOG_KIND=30100
 # Kind for individual content announcements
 CONTENT_KIND=30101
@@ -407,7 +407,7 @@ cmd_search() {
 
     nid=$(node_id)
     echo "══════════════════════════════════════════════════"
-    echo "  Agentic OS — Distributed Search"
+    echo "  PryzentOS — Distributed Search"
     echo "  Query: \"$query\""
     echo "  Node:  ${nid:-unknown}"
     echo "══════════════════════════════════════════════════"
@@ -452,7 +452,7 @@ cmd_catalog() {
 
 # ── Discover active nodes on Nostr ────────────────────────────────────────────
 cmd_discover() {
-    echo "Querying Nostr relays for active Agentic OS nodes..."
+    echo "Querying Nostr relays for active PryzentOS nodes..."
     echo ""
     search_nostr ""
 }
@@ -500,7 +500,7 @@ case "$CMD" in
     sync)     cmd_sync ;;
     help|*)
         cat << 'HELP'
-distributed-search.sh — Agentic OS node discovery & content search
+distributed-search.sh — PryzentOS node discovery & content search
 
 Commands:
   index              Scan local content (shares, certs, notes, tools) and build index
@@ -508,7 +508,7 @@ Commands:
   sync               Index + publish in one step (run at boot or on a timer)
   search <query>     Search local index + live query Nostr relays for other nodes
   catalog            Show what this node has indexed
-  discover           List all active Agentic OS nodes found on Nostr
+  discover           List all active PryzentOS nodes found on Nostr
   fetch <hash>       Locate content by hash (local first, then remote)
 
 How nodes find each other:

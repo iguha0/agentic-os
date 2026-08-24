@@ -1,5 +1,5 @@
 #!/bin/bash
-# Rebuild initramfs.cpio from rootfs/ for Agentic OS.
+# Rebuild initramfs.cpio from rootfs/ for PryzentOS.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

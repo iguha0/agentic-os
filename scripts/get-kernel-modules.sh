@@ -18,7 +18,7 @@ TMP="$SCRIPT_DIR/tmp-modules"
 mkdir -p "$TMP"
 
 echo "═══════════════════════════════════════════════════════"
-echo "  Agentic OS — Kernel Module Downloader"
+echo "  PryzentOS — Kernel Module Downloader"
 echo "  Gets virtio_blk + 9p so the VM can mount its own disks"
 echo "═══════════════════════════════════════════════════════"
 echo ""

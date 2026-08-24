@@ -1,6 +1,6 @@
 #!/bin/sh
 # download-model.sh — fetch the Qwen2.5-1.5B-Instruct GGUF (Apache-2.0)
-# and package it as the read-only model disk Agentic OS boots from.
+# and package it as the read-only model disk PryzentOS boots from.
 set -e
 
 MODEL_URL="${MODEL_URL:-https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/qwen2.5-1.5b-instruct-q4_k_m.gguf}"

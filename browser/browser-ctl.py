@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-browser-ctl.py — Chromium CDP controller for Agentic OS.
+browser-ctl.py — Chromium CDP controller for PryzentOS.
 
 Automates the graphical Chromium browser via Chrome DevTools Protocol.
 Requires Chromium launched with --remote-debugging-port=9222.

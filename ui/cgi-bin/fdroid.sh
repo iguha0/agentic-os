@@ -2,7 +2,7 @@
 # CGI: GET /cgi-bin/fdroid.sh?q=<query>          search F-Droid catalogue
 #      GET /cgi-bin/fdroid.sh?download=<pkg>     download latest APK to inbox
 #
-# Agentic OS has no Android runtime: APKs are take-away artifacts
+# PryzentOS has no Android runtime: APKs are take-away artifacts
 # (transfer/sideload onto Android devices from the Files app or shares).
 
 echo "Content-Type: application/json"

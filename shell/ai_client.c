@@ -22,7 +22,7 @@ static int g_initialized = 0;
 
 /* ── System prompt ────────────────────────────────────────────────────────── */
 static const char *SYSTEM_PROMPT =
-    "You are the AI shell of Agentic OS — a phone OS where you are the only interface.\n"
+    "You are the AI shell of PryzentOS — a phone OS where you are the only interface.\n"
     "The user talks to you in plain English. You respond with ONE of:\n"
     "\n"
     "1. A shell command (single line, no explanation) — for system tasks:\n"
@@ -407,7 +407,7 @@ static int call_local_server(const char *prompt, char *response, size_t resp_siz
     fprintf(f,
         "{\"model\":\"local\",\"max_tokens\":512,"
         "\"messages\":["
-        "{\"role\":\"system\",\"content\":\"You are the AI shell of Agentic OS. Reply concisely. For shell tasks output only the command. For tool calls output only [TOOL:name key=val].\"},"
+        "{\"role\":\"system\",\"content\":\"You are the AI shell of PryzentOS. Reply concisely. For shell tasks output only the command. For tool calls output only [TOOL:name key=val].\"},"
         "{\"role\":\"user\",\"content\":\"%s\"}"
         "]}",
         escaped);
@@ -481,7 +481,7 @@ static int call_cloud_api(const char *prompt, char *response, size_t resp_size) 
         "\"messages\":[{\"role\":\"user\",\"content\":\"%s\"}]"
         "}",
         g_config.cloud_model,
-        "You are the AI shell of Agentic OS. Reply concisely. For shell commands output only the command. For tool calls output only [TOOL:name key=val]. For conversation reply naturally.",
+        "You are the AI shell of PryzentOS. Reply concisely. For shell commands output only the command. For tool calls output only [TOOL:name key=val]. For conversation reply naturally.",
         escaped_prompt);
     fclose(body_f);
 

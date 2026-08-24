@@ -129,7 +129,7 @@ if __name__ == "__main__":
     import os, sys
     sk = os.urandom(32)
     pk = pubkey_gen(sk)
-    msg = sha256(b"agentic-os nostr test")
+    msg = sha256(b"pryzentos nostr test")
     aux = os.urandom(32)
     sig = schnorr_sign(msg, sk, aux)
     ok  = schnorr_verify(msg, pk, sig)
