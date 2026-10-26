@@ -1,0 +1,184 @@
+#!/bin/busybox sh
+# PryzentOS — first-stage init for real phones.
+#
+# Lives in the ramdisk of boot.img, next to the phone's own (stock) kernel.
+# Its only job: bring up just enough of the device to find the PryzentOS
+# root filesystem (flashed onto the "userdata" partition), then switch_root
+# into it so the normal PryzentOS init (/init = agentic-init.sh) takes over.
+#
+# Nothing from Android runs. Android's /system, /vendor and its init are
+# never mounted or executed.
+#
+# Debugging without a screen: plug the phone into a computer over USB. If the
+# kernel supports USB gadgets, a network adapter appears; the phone is
+# 172.16.42.1 and `telnet 172.16.42.1` gives a root shell (stage 1 only).
+#
+# Kernel command line knobs (optional):
+#   pryzent.root=<partition name|/dev/node>   default: userdata
+#   pryzent.debug=1                           stop in stage 1 with telnet shell
+
+/bin/busybox mkdir -p /bin /sbin /usr/bin /usr/sbin /proc /sys /dev /run /tmp /sysroot
+/bin/busybox --install -s
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || mdev -s
+mount -t tmpfs tmpfs /run
+mount -t tmpfs tmpfs /tmp
+mkdir -p /dev/pts && mount -t devpts devpts /dev/pts
+
+LOG=/run/pryzent-stage1.log
+log() {
+    echo "[pryzent-stage1] $*" >> "$LOG"
+    echo "[pryzent-stage1] $*" > /dev/kmsg 2>/dev/null
+}
+splash() { pryzent-splash "$@" >/dev/null 2>&1 || true; }
+
+cmdline_arg() { # cmdline_arg <key> <default>
+    for w in $(cat /proc/cmdline); do
+        case "$w" in "$1="*) echo "${w#*=}"; return ;; esac
+    done
+    echo "$2"
+}
+
+ROOT_SPEC=$(cmdline_arg pryzent.root userdata)
+DEBUG=$(cmdline_arg pryzent.debug 0)
+
+log "PryzentOS stage 1 on kernel $(uname -r)"
+splash "Starting..." "kernel $(uname -r)"
+
+# ── Kernel modules shipped by the vendor (GKI devices, Android 12+) ─────────
+# On these phones display/touch/storage drivers are modules in the
+# vendor_boot ramdisk, which the bootloader merges with ours. Load them in the
+# order the vendor listed.
+load_vendor_modules() {
+    for dir in /lib/modules /vendor/lib/modules; do
+        [ -f "$dir/modules.load" ] || continue
+        log "loading vendor modules from $dir"
+        while read -r m; do
+            [ -n "$m" ] || continue
+            insmod "$dir/$(basename "$m")" 2>/dev/null
+        done < "$dir/modules.load"
+    done
+}
+load_vendor_modules
+
+# ── USB networking + debug shell ─────────────────────────────────────────────
+# Same convention as postmarketOS: phone = 172.16.42.1, PC gets 172.16.42.2.
+setup_usb_network() {
+    udc=$(ls /sys/class/udc 2>/dev/null | head -n 1)
+    G=/sys/kernel/config/usb_gadget/pryzent
+    if [ -n "$udc" ]; then
+        mount -t configfs configfs /sys/kernel/config 2>/dev/null
+        if [ -d /sys/kernel/config/usb_gadget ]; then
+            mkdir -p "$G" "$G/strings/0x409" "$G/configs/c.1/strings/0x409"
+            echo 0x1d6b > "$G/idVendor"     # Linux Foundation
+            echo 0x0104 > "$G/idProduct"    # Multifunction composite gadget
+            echo "PryzentOS"    > "$G/strings/0x409/manufacturer"
+            echo "PryzentOS phone" > "$G/strings/0x409/product"
+            echo "pryzent"      > "$G/strings/0x409/serialnumber"
+            echo "RNDIS + debug" > "$G/configs/c.1/strings/0x409/configuration"
+            if mkdir -p "$G/functions/rndis.usb0" 2>/dev/null ||
+               mkdir -p "$G/functions/ncm.usb0" 2>/dev/null; then
+                f=$(ls -d "$G"/functions/*.usb0 | head -n 1)
+                ln -s "$f" "$G/configs/c.1/" 2>/dev/null
+                echo "$udc" > "$G/UDC" 2>/dev/null && log "USB gadget on $udc"
+            fi
+        fi
+    elif [ -d /sys/class/android_usb/android0 ]; then
+        # Older (pre-configfs) Android kernels.
+        A=/sys/class/android_usb/android0
+        echo 0 > "$A/enable"
+        echo 18D1 > "$A/idVendor"
+        echo D001 > "$A/idProduct"
+        echo rndis > "$A/functions"
+        echo 1 > "$A/enable"
+        log "USB gadget via android_usb"
+    fi
+
+    sleep 1
+    for ifc in usb0 rndis0; do
+        if ip link show "$ifc" >/dev/null 2>&1; then
+            ip addr add 172.16.42.1/24 dev "$ifc" 2>/dev/null
+            ip link set "$ifc" up
+            cat > /run/udhcpd.conf <<EOF
+start 172.16.42.2
+end 172.16.42.2
+interface $ifc
+option subnet 255.255.255.0
+lease_file /run/udhcpd.leases
+EOF
+            touch /run/udhcpd.leases
+            udhcpd /run/udhcpd.conf
+            telnetd -p 23 -l /bin/sh
+            log "USB network up on $ifc: telnet 172.16.42.1"
+            return 0
+        fi
+    done
+    log "no USB gadget support (that is fine)"
+    return 1
+}
+setup_usb_network
+
+# ── Find the PryzentOS root partition ────────────────────────────────────────
+find_root() {
+    case "$ROOT_SPEC" in
+        /dev/*) [ -b "$ROOT_SPEC" ] && echo "$ROOT_SPEC"; return ;;
+    esac
+    # By GPT partition name (what fastboot calls it, e.g. "userdata").
+    for u in /sys/class/block/*/uevent; do
+        if grep -qx "PARTNAME=$ROOT_SPEC" "$u" 2>/dev/null; then
+            echo "/dev/$(basename "$(dirname "$u")")"
+            return
+        fi
+    done
+    # By filesystem label (used for SD card / test installs).
+    findfs LABEL=PRYZENT_ROOT 2>/dev/null
+}
+
+ROOT_DEV=""
+i=0
+while [ $i -lt 30 ]; do
+    ROOT_DEV=$(find_root)
+    [ -n "$ROOT_DEV" ] && break
+    [ $i -eq 3 ] && splash "Looking for storage..." "partition: $ROOT_SPEC"
+    i=$((i + 1))
+    sleep 1
+done
+
+fail() {
+    log "FAILED: $*"
+    splash -e "Boot failed" "$*" "Connect USB and run: telnet 172.16.42.1" "Log: /run/pryzent-stage1.log"
+    # Never return: PID 1 exiting panics the kernel. Keep the debug shell up.
+    while true; do sleep 3600; done
+}
+
+[ -n "$ROOT_DEV" ] || fail "no partition named '$ROOT_SPEC' found"
+log "root device: $ROOT_DEV"
+
+mount -t ext4 -o rw,noatime "$ROOT_DEV" /sysroot 2>>"$LOG" ||
+    fail "$ROOT_DEV is not a PryzentOS ext4 filesystem (flash pryzent-rootfs.img to $ROOT_SPEC)"
+[ -x /sysroot/init ] || fail "$ROOT_DEV has no /init (flash pryzent-rootfs.img to $ROOT_SPEC)"
+[ -f /sysroot/etc/pryzent-release ] || fail "$ROOT_DEV does not contain PryzentOS"
+
+if [ "$DEBUG" = "1" ]; then
+    splash "Debug mode" "root mounted at /sysroot" "telnet 172.16.42.1"
+    log "pryzent.debug=1: staying in stage 1"
+    while true; do sleep 3600; done
+fi
+
+splash "Starting PryzentOS..." "$(cat /sysroot/etc/pryzent-release)"
+cp "$LOG" /sysroot/var/log/pryzent-stage1.log 2>/dev/null
+
+# Stop stage-1 daemons; stage 2 restarts its own on the same USB interface.
+killall telnetd udhcpd 2>/dev/null
+
+# Hand the live kernel mounts over to the real root.
+for m in dev proc sys run; do
+    mkdir -p "/sysroot/$m"
+    mount --move "/$m" "/sysroot/$m"
+done
+
+export PRYZENT_PLATFORM=phone
+exec switch_root /sysroot /init

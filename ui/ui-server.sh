@@ -9,6 +9,10 @@
 UI_DIR="/usr/share/agentic/ui"
 PORT=7080
 PID_FILE="/var/run/agentic-ui.pid"
+# Addresses to listen on (space separated). Empty = all interfaces, which is
+# only safe inside the QEMU VM: the UI can run commands as root. On phones
+# /init sets UI_BIND to loopback + the USB-cable address.
+UI_BIND="${UI_BIND:-}"
 
 mkdir -p "$UI_DIR/cgi-bin"
 
@@ -23,26 +27,34 @@ done
 CMD="$1"
 case "$CMD" in
     stop)
-        [ -f "$PID_FILE" ] && kill "$(cat $PID_FILE)" 2>/dev/null
+        [ -f "$PID_FILE" ] && kill $(cat "$PID_FILE") 2>/dev/null
         echo "[ui-server] stopped"
         ;;
     status)
-        if [ -f "$PID_FILE" ] && kill -0 "$(cat $PID_FILE)" 2>/dev/null; then
-            echo "[ui-server] running on http://localhost:$PORT (pid $(cat $PID_FILE))"
+        if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+            echo "[ui-server] running on http://localhost:$PORT (pid $(cat "$PID_FILE" | tr '\n' ' '))"
         else
             echo "[ui-server] not running"
         fi
         ;;
     *)
         # Kill old instance
-        [ -f "$PID_FILE" ] && kill "$(cat $PID_FILE)" 2>/dev/null; rm -f "$PID_FILE"
+        [ -f "$PID_FILE" ] && kill $(cat "$PID_FILE") 2>/dev/null; rm -f "$PID_FILE"
 
         echo "[ui-server] starting on http://localhost:$PORT"
         echo "[ui-server] web root: $UI_DIR"
 
         # Use aghttpd (our built-in static server with CGI support)
-        /usr/local/bin/aghttpd -p "$PORT" -h "$UI_DIR" &
-        echo $! > "$PID_FILE"
-        echo "[ui-server] started (pid $!)"
+        if [ -z "$UI_BIND" ]; then
+            /usr/local/bin/aghttpd -p "$PORT" -h "$UI_DIR" &
+            echo $! >> "$PID_FILE"
+        else
+            for a in $UI_BIND; do
+                /usr/local/bin/aghttpd -p "$PORT" -h "$UI_DIR" -b "$a" &
+                echo $! >> "$PID_FILE"
+                echo "[ui-server] listening on $a:$PORT"
+            done
+        fi
+        echo "[ui-server] started (pid $(cat "$PID_FILE" | tr '\n' ' '))"
         ;;
 esac

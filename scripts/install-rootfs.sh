@@ -1,10 +1,16 @@
 #!/bin/bash
 # install-rootfs.sh — sync all repo assets into rootfs/ (source of truth for initramfs)
 # Run after every source change, then scripts/mkinitramfs.sh.
+#
+# Env overrides (used by phone/build.sh):
+#   PRYZENT_ROOT  target root directory          (default: rootfs/)
+#   PRYZENT_BIN   dir with freshly built binaries (agentic-shell2, aghttpd,
+#                 agbrowser, pryzent-splash); default: prebuilt in-tree copies
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ROOT="$SCRIPT_DIR/../rootfs"
+ROOT="${PRYZENT_ROOT:-$SCRIPT_DIR/../rootfs}"
+PBIN="${PRYZENT_BIN:-}"
 BIN="$ROOT/bin"
 LOCAL="$ROOT/usr/local/bin"
 UI="$ROOT/usr/local/share/agentic-ui"
@@ -12,7 +18,7 @@ UI="$ROOT/usr/local/share/agentic-ui"
 mkdir -p "$BIN" "$LOCAL" "$UI/cgi-bin"
 
 echo "[install] agent shell..."
-cp "$SCRIPT_DIR/../shell2/agentic-shell2" "$BIN/agentic-shell2"
+cp "${PBIN:-$SCRIPT_DIR/../shell2}/agentic-shell2" "$BIN/agentic-shell2"
 chmod 755 "$BIN/agentic-shell2"
 
 echo "[install] tools & daemons -> /usr/local/bin (extensionless + .sh aliases)..."
@@ -43,7 +49,8 @@ install_sh "$SCRIPT_DIR/../net/search/distributed-search.sh" distributed-search
 # workflows + browser control keep their exact called names
 cp "$SCRIPT_DIR/../browser/workflows.sh"  "$LOCAL/workflows.sh";  chmod 755 "$LOCAL/workflows.sh"
 cp "$SCRIPT_DIR/../browser/browser-ctl.py" "$LOCAL/browser-ctl";  chmod 755 "$LOCAL/browser-ctl"
-[ -f "$SCRIPT_DIR/../browser/agbrowser" ] && cp "$SCRIPT_DIR/../browser/agbrowser" "$LOCAL/agbrowser" && chmod 755 "$LOCAL/agbrowser"
+AGB="${PBIN:-$SCRIPT_DIR/../browser}/agbrowser"
+if [ -f "$AGB" ]; then cp "$AGB" "$LOCAL/agbrowser"; chmod 755 "$LOCAL/agbrowser"; fi
 
 echo "[install] libsodium sealed-box helper (agseal)..."
 if [ -f "$SCRIPT_DIR/../prebuilt/agseal" ]; then
@@ -55,6 +62,9 @@ fi
 # lightning tip line on public shares
 true
 echo "[install] web ui..."
+if [ -n "$PBIN" ]; then
+    cp "$PBIN/aghttpd" "$LOCAL/aghttpd"; chmod 755 "$LOCAL/aghttpd"
+fi
 [ -f "$ROOT/usr/local/bin/aghttpd" ] || { echo "ERROR: rootfs/usr/local/bin/aghttpd missing (prebuilt)"; exit 1; }
 cp "$SCRIPT_DIR/../ui/home.html"     "$UI/home.html"
 cp "$SCRIPT_DIR/../ui/ui-server.sh"  "$LOCAL/ui-server.sh"; chmod 755 "$LOCAL/ui-server.sh"

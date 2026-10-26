@@ -340,12 +340,15 @@ static void handle_request(int fd) {
 
 /* ── Main ─────────────────────────────────────────────────────────────────── */
 int main(int argc, char *argv[]) {
-    /* Parse args: aghttpd [-p port] [-h docroot] */
+    /* Parse args: aghttpd [-p port] [-h docroot] [-b bind-address] */
+    const char *bind_addr = NULL;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-p") == 0 && i+1 < argc)
             g_port = atoi(argv[++i]);
         else if (strcmp(argv[i], "-h") == 0 && i+1 < argc)
             strncpy(g_docroot, argv[++i], MAX_PATH-1);
+        else if (strcmp(argv[i], "-b") == 0 && i+1 < argc)
+            bind_addr = argv[++i];
     }
 
     signal(SIGCHLD, SIG_DFL); /* auto-reap children */
@@ -361,14 +364,18 @@ int main(int argc, char *argv[]) {
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(g_port);
     addr.sin_addr.s_addr = INADDR_ANY;
+    if (bind_addr && inet_pton(AF_INET, bind_addr, &addr.sin_addr) != 1) {
+        fprintf(stderr, "[aghttpd] bad bind address: %s\n", bind_addr);
+        return 1;
+    }
 
     if (bind(srv, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         perror("bind"); return 1;
     }
     if (listen(srv, 16) < 0) { perror("listen"); return 1; }
 
-    fprintf(stderr, "[aghttpd] listening on port %d, docroot=%s\n",
-            g_port, g_docroot);
+    fprintf(stderr, "[aghttpd] listening on %s:%d, docroot=%s\n",
+            bind_addr ? bind_addr : "*", g_port, g_docroot);
 
     for (;;) {
         /* Reap zombies */

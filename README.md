@@ -22,6 +22,21 @@ a metadata-only DHT search index.
 ./launch-graphical.sh
 ```
 
+## Install on a real phone
+
+PryzentOS installs on real phones (MediaTek, e.g. Lava), replacing Android
+completely. Only the phone's own Linux kernel is kept for its drivers.
+
+```bash
+sudo phone/build.sh all STOCK_BOOT=/path/to/your/phone/boot.img
+sudo phone/qemu-test.sh            # rehearse the install in an emulator
+fastboot flash userdata phone/out/pryzent-rootfs.simg
+fastboot flash boot     phone/out/pryzent-boot.img
+```
+
+Full step-by-step guide (backup, unlock, Wi-Fi, troubleshooting, going back
+to Android): **[docs/INSTALL-PHONE.md](docs/INSTALL-PHONE.md)**.
+
 Inside the OS: `!net` for diagnostics · `netsearch <query>` for shared content ·
 `open <link>` to decrypt received shares · `zap 100` for a Lightning invoice ·
 Share app / Search app / Store in the web UI.

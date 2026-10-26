@@ -36,6 +36,14 @@ UPTIME_M=$(( (UPTIME % 3600) / 60 ))
 
 TUNNEL="stopped"
 [ -f "$AGENTIC_DIR/shares/tunnel.pid" ] && kill -0 "$(cat $AGENTIC_DIR/shares/tunnel.pid)" 2>/dev/null && TUNNEL="running"
+# Primary IPv4 (Wi-Fi / VM ethernet) and battery (phones only).
+IP=$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -n 1)
+BATTERY=""
+for b in /sys/class/power_supply/*; do
+    [ "$(cat "$b/type" 2>/dev/null)" = "Battery" ] || continue
+    BATTERY="$(cat "$b/capacity" 2>/dev/null)% $(cat "$b/status" 2>/dev/null | tr 'A-Z' 'a-z')"
+    break
+done
 NET="online"
 ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1 || NET="offline"
 
@@ -53,6 +61,8 @@ cat <<EOF
   "uptime":         "${UPTIME_H}h ${UPTIME_M}m",
   "tunnel":         "$TUNNEL",
   "network":        "$NET",
+  "ip":             "$IP",
+  "battery":        "$BATTERY",
   "version":        "0.3.0-beta"
 }
 EOF

@@ -43,6 +43,27 @@ case " $(cat /proc/cmdline 2>/dev/null) " in
     *)                            AGENTIC_MODE="shell" ;;
 esac
 
+# Platform: "qemu" (the dev VM) or "phone" (real hardware, booted through
+# phone/initramfs/init which exports PRYZENT_PLATFORM=phone).
+case " $(cat /proc/cmdline 2>/dev/null) " in
+    *" pryzent.platform=phone "*) PRYZENT_PLATFORM="phone" ;;
+esac
+PRYZENT_PLATFORM="${PRYZENT_PLATFORM:-qemu}"
+echo "[agentic-init] platform: $PRYZENT_PLATFORM"
+echo "$PRYZENT_PLATFORM" > /run/pryzent-platform 2>/dev/null
+if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+    mkdir -p /var/log
+    PRYZENT_PHONE_SOURCED=1 . /usr/local/bin/pryzent-phone
+    phone_splash "Starting PryzentOS..." "bringing up the device"
+    phone_grow_root
+    phone_udev
+    # Phones boot to the touch UI whenever the graphical stack is installed.
+    case " $(cat /proc/cmdline 2>/dev/null) " in
+        *" agentic.mode=shell "*) ;;
+        *) command -v Xorg >/dev/null 2>&1 && AGENTIC_MODE="graphical" ;;
+    esac
+fi
+
 load_one_module() {
     name="$1"
     rel="$2"
@@ -70,7 +91,7 @@ load_one_module() {
 # virtio_net, virtio_blk, 9p, etc. as modules). We do this before network and
 # block-device setup so those devices actually appear.
 echo "[agentic-init] loading kernel modules..."
-if [ -d /lib/modules ]; then
+if [ -d /lib/modules ] && [ "$PRYZENT_PLATFORM" = "qemu" ]; then
     load_one_module failover "kernel/net/core/failover" || true
     load_one_module net_failover "kernel/drivers/net/net_failover" || true
     load_one_module virtio_net "kernel/drivers/net/virtio_net" || true
@@ -129,7 +150,11 @@ mount_persistent_state() {
     return 1
 }
 
-mount_persistent_state || true
+if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+    echo "[agentic-init] persistent state: phone root filesystem"
+else
+    mount_persistent_state || true
+fi
 
 mkdir -p /usr/share/agentic
 if command -v openssl >/dev/null 2>&1; then
@@ -137,18 +162,25 @@ if command -v openssl >/dev/null 2>&1; then
     /usr/local/bin/e2e-encrypt.sh keygen 2>/dev/null || true
 fi
 
-# Network setup (QEMU user networking defaults)
 ip link set lo up 2>/dev/null
-ip link set eth0 up 2>/dev/null
-ip addr add 10.0.2.15/24 dev eth0 2>/dev/null
-ip route add default via 10.0.2.2 2>/dev/null
-
-# DNS: QEMU user networking provides a forwarder at 10.0.2.3.
 mkdir -p /etc
-printf 'nameserver 10.0.2.3\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+    # USB cable network to a PC + Wi-Fi (udhcpc writes resolv.conf).
+    printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+    phone_usb_net || true
+    phone_wifi_up || true
+else
+    # Network setup (QEMU user networking defaults)
+    ip link set eth0 up 2>/dev/null
+    ip addr add 10.0.2.15/24 dev eth0 2>/dev/null
+    ip route add default via 10.0.2.2 2>/dev/null
+
+    # DNS: QEMU user networking provides a forwarder at 10.0.2.3.
+    printf 'nameserver 10.0.2.3\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+    echo "[agentic-init] ip: $(ip addr show eth0 2>/dev/null | grep 'inet ' | awk '{print $2}') default via 10.0.2.2"
+fi
 
 echo "[agentic-init] network interfaces: $(ls /sys/class/net 2>/dev/null | tr '\n' ' ')"
-echo "[agentic-init] ip: $(ip addr show eth0 2>/dev/null | grep 'inet ' | awk '{print $2}') default via 10.0.2.2"
 
 # Quick connectivity sanity check (best-effort, not fatal)
 if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
@@ -203,7 +235,11 @@ link_model() {
 # 1) Enumerate /sys/block/* and try each. The glob may match nothing;
 #    guard with a placeholder so the for-loop body never runs in that case.
 echo "[agentic-init] scanning for model drive..."
-set -- /sys/block/* ""
+if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+    set -- ""   # phone: the model lives in the root filesystem (step 4)
+else
+    set -- /sys/block/* ""
+fi
 for bdev in "$@"; do
     [ -z "$bdev" ] && break
     [ -d "$bdev" ] || continue
@@ -226,7 +262,7 @@ for bdev in "$@"; do
 done
 
 # 2) Fallback: try common names explicitly.
-if [ "$MODEL_MOUNTED" != "1" ]; then
+if [ "$MODEL_MOUNTED" != "1" ] && [ "$PRYZENT_PLATFORM" = "qemu" ]; then
     for dev in /dev/vda /dev/vda1 /dev/sda /dev/sda1 /dev/vdb /dev/sdb; do
         echo "[agentic-init] trying $dev..."
         result=$(try_mount "$dev")
@@ -245,7 +281,7 @@ fi
 
 # 3) 9p filesystem share from QEMU (mount_tag=models). This is the normal
 #    path for test-interactive.sh, which exposes $SCRIPT_DIR/models.
-if [ "$MODEL_MOUNTED" != "1" ]; then
+if [ "$MODEL_MOUNTED" != "1" ] && [ "$PRYZENT_PLATFORM" = "qemu" ]; then
     echo "[agentic-init] trying 9p mount (mount_tag=models)..."
     mkdir -p /mnt/models-9p
     if mount -t 9p -o trans=virtio,version=9p2000.L,ro models /mnt/models-9p 2>/dev/null; then
@@ -272,14 +308,15 @@ if [ "$MODEL_MOUNTED" != "1" ]; then
     if [ -n "$found" ] && [ "$found" != "$MODEL_PATH" ]; then
         link_model "$found"
         MODEL_MOUNTED=1
-        MODEL_DEV="(initramfs)"
-        echo "[agentic-init] model present in initramfs; no bind needed"
+        MODEL_DEV="(rootfs)"
+        echo "[agentic-init] model present in root filesystem"
     elif [ -f "$MODEL_PATH" ]; then
         ln -sf "$MODEL_PATH" "$LEGACY_MODEL_PATH"
         MODEL_MOUNTED=1
-        MODEL_DEV="(initramfs)"
-        echo "[agentic-init] model present in initramfs; no bind needed"
+        MODEL_DEV="(rootfs)"
+        echo "[agentic-init] model present in root filesystem"
     fi
+    [ -n "$LLAMA_SERVER_PATH" ] || remember_llama_server ""
 fi
 
 if [ "$MODEL_MOUNTED" = "1" ]; then
@@ -287,6 +324,8 @@ if [ "$MODEL_MOUNTED" = "1" ]; then
     echo "[agentic-init] model ready: $MODEL_NAME (${MODEL_SIZE:-0} bytes) from $MODEL_DEV"
     if [ -n "$LLAMA_SERVER_PATH" ] && [ -x "$LLAMA_SERVER_PATH" ]; then
         echo "[agentic-init] starting on-device llama-server: $LLAMA_SERVER_PATH"
+        LLAMA_THREADS=$(( $(nproc 2>/dev/null || echo 4) / 2 ))
+        [ "$LLAMA_THREADS" -ge 2 ] || LLAMA_THREADS=2
         "$LLAMA_SERVER_PATH" \
             -m "$MODEL_PATH" \
             --host 127.0.0.1 \
@@ -294,27 +333,31 @@ if [ "$MODEL_MOUNTED" = "1" ]; then
             --ctx-size 1024 \
             --batch-size 128 \
             --ubatch-size 128 \
-            --threads 2 \
-            --threads-batch 2 \
+            --threads "$LLAMA_THREADS" \
+            --threads-batch "$LLAMA_THREADS" \
             --parallel 1 \
             --cache-ram 0 \
             -ngl 0 \
             --no-mmap \
             --no-warmup \
             >/tmp/llama-server.log 2>&1 &
-        i=0
-        while [ "$i" -lt 180 ]; do
-            if wget -q -T 1 -O - http://127.0.0.1:8080/health >/dev/null 2>&1; then
-                echo "[agentic-init] llama-server ready on 127.0.0.1:8080"
-                break
+        wait_llama() {
+            i=0
+            while [ "$i" -lt 180 ]; do
+                if wget -q -T 1 -O - http://127.0.0.1:8080/health >/dev/null 2>&1; then
+                    echo "[agentic-init] llama-server ready on 127.0.0.1:8080"
+                    break
+                fi
+                i=$((i + 1))
+                sleep 1
+            done
+            if [ "$i" -ge 180 ]; then
+                echo "[agentic-init] llama-server not ready after 180s; recent log:"
+                tail -n 40 /tmp/llama-server.log 2>/dev/null || true
             fi
-            i=$((i + 1))
-            sleep 1
-        done
-        if [ "$i" -ge 180 ]; then
-            echo "[agentic-init] llama-server not ready after 180s; recent log:"
-            tail -n 40 /tmp/llama-server.log 2>/dev/null || true
-        fi
+        }
+        # A phone shows its home screen right away; the AI joins when ready.
+        if [ "$PRYZENT_PLATFORM" = "phone" ]; then wait_llama & else wait_llama; fi
     else
         echo "[agentic-init] llama-server binary not found on model payload; using host fallback if available"
     fi
@@ -375,8 +418,8 @@ start_graphical_home() {
     chmod 700 "$XDG_RUNTIME_DIR"
 
     dbus-daemon --system --fork >/tmp/dbus.log 2>&1 || true
-    /usr/local/bin/ui-server.sh >/tmp/ui-server.log 2>&1
 
+    [ "$PRYZENT_PLATFORM" = "phone" ] && phone_xorg_conf
     Xorg :0 -nolisten tcp -noreset >/tmp/xorg.log 2>&1 &
     i=0
     while [ "$i" -lt 30 ]; do
@@ -388,6 +431,9 @@ start_graphical_home() {
     if [ ! -S /tmp/.X11-unix/X0 ]; then
         echo "[agentic-init] Xorg failed to start; recent log:"
         tail -n 40 /tmp/xorg.log 2>/dev/null
+        [ "$PRYZENT_PLATFORM" = "phone" ] && phone_splash -e "Display could not start" \
+            "The agent is running. From a PC on USB open:" "http://172.16.42.1:7080" \
+            "Xorg log: /tmp/xorg.log"
         run_agent_shell_forever
     fi
 
@@ -422,10 +468,24 @@ start_graphical_home() {
     fi
 
     echo "[agentic-init] Starting Chromium home UI (kiosk with CDP on 9222)..."
-    # Launch the kiosk Chromium 
+    SCALE=1
+    PHONE_FLAGS=""
+    if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+        SCALE=$(phone_scale_factor)
+        PHONE_FLAGS="--touch-events=enabled --enable-pinch --overscroll-history-navigation=0"
+        # On-screen keyboard: phones have no keys to type with.
+        for kb in svkbd-mobile-intl svkbd-mobile-plain svkbd; do
+            if command -v "$kb" >/dev/null 2>&1; then
+                "$kb" -d >/tmp/svkbd.log 2>&1 &
+                break
+            fi
+        done
+    fi
+    # Launch the kiosk Chromium
     # Home screen: the local agent web UI (chat/gui).
     "$CHROMIUM" \
         --kiosk \
+        $PHONE_FLAGS \
         --no-sandbox \
         --disable-dev-shm-usage \
         --disable-gpu-sandbox \
@@ -433,7 +493,7 @@ start_graphical_home() {
         --disable-translate \
         --no-first-run \
         --password-store=basic \
-        --force-device-scale-factor=1 \
+        --force-device-scale-factor="$SCALE" \
         --user-data-dir=/usr/share/agentic/browser-profile \
         --remote-debugging-port=9222 \
         --remote-allow-origins=http://127.0.0.1,http://localhost \
@@ -453,6 +513,10 @@ start_graphical_home() {
         sleep 0.5
     done
 
+    if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+        # No physical keyboard: the agent is reached through the home screen.
+        exec /bin/sh -c 'while true; do sleep 86400; done'
+    fi
     echo "[agentic-init] Launching xterm + agentic shell (you can also use the web home at :7080)"
     # Launch xterm iconic (minimized) AFTER the kiosk has focus
     env SHELL=/bin/sh TERM=xterm /usr/bin/xterm -iconic -geometry 90x28 -fa 'Monospace' -fs 11 -xrm 'XTerm*shell: /bin/sh' -e /bin/sh -c 'exec /bin/agentic-shell2' &
@@ -471,8 +535,29 @@ run_agent_shell_forever() {
     done
 }
 
+# Web UI (home screen + API). Inside the VM it listens everywhere (reached via
+# QEMU port forwarding); on a phone only on the device and the USB cable.
+if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+    export UI_BIND="127.0.0.1 172.16.42.1"
+fi
+/usr/local/bin/ui-server.sh >/tmp/ui-server.log 2>&1
+
+case " $(cat /proc/cmdline 2>/dev/null) " in
+    *" pryzent.selftest=1 "*)
+        sleep 2
+        /usr/local/bin/pryzent-selftest
+        sync
+        poweroff -f
+        ;;
+esac
+
 if [ "$AGENTIC_MODE" = "graphical" ]; then
     start_graphical_home
+fi
+
+if [ "$PRYZENT_PLATFORM" = "phone" ]; then
+    phone_splash "PryzentOS is running" "No display stack installed (minimal build)." \
+        "Connect USB to a PC and open:" "http://172.16.42.1:7080" "Shell: telnet 172.16.42.1"
 fi
 
 # Banner

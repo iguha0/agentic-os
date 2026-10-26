@@ -397,9 +397,21 @@ I can remember things, browse the web, take notes, share files publicly / with s
         <div class="setting-item"><span class="setting-label">Model</span><span class="setting-value">Qwen2.5 1.5B Instruct</span></div>
         <div class="setting-item"><span class="setting-label">Status</span><span class="setting-value" id="s-status">—</span></div>
       </div>
+      <div class="settings-section" id="wifi-section">
+        <h3>📶 Wi-Fi</h3>
+        <div class="setting-item"><span class="setting-label">Status</span><span class="setting-value" id="wifi-state">—</span></div>
+        <div class="f-row"><button class="primary-btn" onclick="wifiScan()">Scan for networks</button></div>
+        <div id="wifi-list"></div>
+        <div class="f-row" id="wifi-join" style="display:none">
+          <input class="f-input" id="wifi-psk" type="password" placeholder="password">
+          <button class="primary-btn" style="width:auto;padding:9px 16px" onclick="wifiConnect()">Join</button>
+        </div>
+        <div class="link-out" id="wifi-out"></div>
+      </div>
       <div class="settings-section">
         <h3>Network & AgentoNet</h3>
-        <div class="setting-item"><span class="setting-label">Device IP</span><span class="setting-value">10.0.2.15</span></div>
+        <div class="setting-item"><span class="setting-label">Device IP</span><span class="setting-value" id="s-ip">—</span></div>
+        <div class="setting-item"><span class="setting-label">Battery</span><span class="setting-value" id="s-battery">—</span></div>
         <div class="setting-item"><span class="setting-label">Tunnel</span><span class="setting-value" id="s-tunnel">—</span></div>
         <div class="setting-item"><span class="setting-label">Relay</span><span class="setting-value">10.0.2.2:7075</span></div>
         <div class="setting-item"><span class="setting-label">DHT index</span><span class="setting-value">10.0.2.2:8889</span></div>
@@ -469,6 +481,8 @@ async function refreshStatus() {
     $('s-username').textContent = s.username || 'user';
     $('s-status').textContent = s.llm_online ? 'online' : 'offline';
     $('s-tunnel').textContent = s.tunnel || '—';
+    $('s-ip').textContent = s.ip || '—';
+    $('s-battery').textContent = s.battery || 'n/a';
   } catch(e) { $('sb-net').textContent='OFF'; $('net-dot').className='dot off'; }
 }
 setInterval(refreshStatus, 8000); refreshStatus();
@@ -646,7 +660,47 @@ async function loadFiles(path) {
 }
 
 /* ── settings helpers ── */
-function loadSettings(){ refreshStatus(); }
+function loadSettings(){ refreshStatus(); wifiStatus(); }
+
+/* ── Wi-Fi (phones) ── */
+let wifiSel = null;
+async function wifiApi(body){ const r = await fetch('/cgi-bin/wifi.sh',{method:'POST',body}); return r.json(); }
+async function wifiStatus(){
+  try {
+    const j = await wifiApi('cmd=status');
+    $('wifi-state').textContent = !j.iface ? 'no Wi-Fi hardware'
+      : (j.state === 'COMPLETED' ? '✓ ' + j.ssid + (j.ip ? ' · ' + j.ip : '') : j.state.toLowerCase());
+  } catch(e) { $('wifi-state').textContent = '—'; }
+}
+async function wifiScan(){
+  $('wifi-list').innerHTML = '<div class="empty-hint">Scanning…</div>';
+  const j = await wifiApi('cmd=scan');
+  if (!j.ok) { $('wifi-list').innerHTML = ''; $('wifi-out').style.display='block'; $('wifi-out').textContent = j.error; return; }
+  $('wifi-list').innerHTML = '';
+  if (!j.networks.length) $('wifi-list').innerHTML = '<div class="empty-hint">No networks found</div>';
+  j.networks.forEach(n => {
+    const d = document.createElement('div');
+    d.className = 'setting-item';
+    const bars = n.signal > -55 ? '▂▄▆█' : n.signal > -67 ? '▂▄▆' : n.signal > -78 ? '▂▄' : '▂';
+    d.innerHTML = '<span class="setting-label"></span><span class="setting-value">' + (n.secure ? '🔒 ' : '') + bars + '</span>';
+    d.firstChild.textContent = n.ssid;
+    d.onclick = () => {
+      wifiSel = n.ssid;
+      $('wifi-psk').placeholder = 'password for ' + n.ssid;
+      $('wifi-join').style.display = 'flex';
+      if (!n.secure) wifiConnect(); else $('wifi-psk').focus();
+    };
+    $('wifi-list').appendChild(d);
+  });
+}
+async function wifiConnect(){
+  if (!wifiSel) return;
+  $('wifi-out').style.display='block'; $('wifi-out').textContent = 'Joining ' + wifiSel + '…';
+  const j = await wifiApi('cmd=connect&ssid=' + encodeURIComponent(wifiSel) + '&psk=' + encodeURIComponent($('wifi-psk').value));
+  $('wifi-out').textContent = j.ok ? '✓ Connected to ' + j.ssid + (j.ip ? ' (' + j.ip + ')' : '') : '✖ ' + j.error;
+  $('wifi-psk').value = '';
+  if (j.ok) { $('wifi-join').style.display = 'none'; wifiStatus(); refreshStatus(); }
+}
 function runCmd(cmd){
   fetch('/cgi-bin/cmd.sh',{method:'POST',body:JSON.stringify({cmd})})
     .then(r=>r.json()).then(j=>alert(cmd+'\n\n'+(j.output||'done')));

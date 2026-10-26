@@ -37,3 +37,4 @@ qemu-graphical-errors.log
 *.log
 .DS_Store
 __pycache__/
+phone/out/
