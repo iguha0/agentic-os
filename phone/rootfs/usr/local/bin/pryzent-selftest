@@ -1,0 +1,35 @@
+#!/bin/sh
+# pryzent-selftest — boot health report. Runs from /init when the kernel
+# command line has pryzent.selftest=1; prints PASS/FAIL lines to the console
+# (and /var/log/pryzent-selftest.log), then powers off. Used by
+# phone/qemu-test.sh and handy on real hardware over the USB shell.
+#
+# Copyright (C) Indrajit Guha — AGPL-3.0
+
+LOG=/var/log/pryzent-selftest.log
+fails=0
+check() { # check <name> <command...>
+    name="$1"; shift
+    if "$@" >/dev/null 2>&1; then r=PASS; else r=FAIL; fails=$((fails + 1)); fi
+    echo "SELFTEST $r: $name" | tee -a "$LOG"
+}
+
+phone_only() { # phone_only <name> <command...>: skipped inside the dev VM
+    if grep -qx phone /run/pryzent-platform 2>/dev/null; then check "$@"
+    else echo "SELFTEST SKIP: $1 (not a phone)" | tee -a "$LOG"; fi
+}
+
+: > "$LOG"
+echo "SELFTEST release: $(cat /etc/pryzent-release 2>/dev/null)" | tee -a "$LOG"
+check "pid 1 is PryzentOS init"   grep -q agentic-init /init
+phone_only "root is persistent ext4"   sh -c "awk '\$2==\"/\"{print \$3}' /proc/mounts | grep -qx ext4"
+phone_only "platform is phone"         grep -qx phone /run/pryzent-platform
+check "agent shell installed"     test -x /bin/agentic-shell2
+check "web UI on 127.0.0.1:7080"  sh -c "wget -q -T 5 -O - http://127.0.0.1:7080/ | grep -qi pryzent"
+check "status API answers JSON"   sh -c "wget -q -T 10 -O - http://127.0.0.1:7080/cgi-bin/status.sh | grep -q '\"version\"'"
+check "wifi API answers JSON"     sh -c "wget -q -T 10 -O - http://127.0.0.1:7080/cgi-bin/wifi.sh | grep -q '\"ok\"'"
+phone_only "UI not exposed on other interfaces" sh -c "! netstat -ltn 2>/dev/null | grep -q '0.0.0.0:7080'"
+phone_only "stage-1 log carried over"  test -s /var/log/pryzent-stage1.log
+echo "SELFTEST status.sh: $(wget -q -T 10 -O - http://127.0.0.1:7080/cgi-bin/status.sh | tr -d '\n ' )" | tee -a "$LOG"
+if [ $fails -eq 0 ]; then echo "SELFTEST RESULT: ALL PASS" | tee -a "$LOG"
+else echo "SELFTEST RESULT: $fails FAILED" | tee -a "$LOG"; fi

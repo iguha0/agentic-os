@@ -6,7 +6,7 @@ vmlinuz
 vmlinuz.old
 
 # ── Generated rootfs trees ─────────────────────────────────
-rootfs/
+/rootfs/
 rootfs-graphical/
 rootfs_extracted/
 rootfs.tar.gz

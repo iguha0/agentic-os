@@ -1,0 +1,183 @@
+#!/bin/sh
+# pryzent-phone — hardware bring-up for PryzentOS on real phones.
+# Sourced by /init (agentic-init.sh) when PRYZENT_PLATFORM=phone, and also
+# usable as a command:  pryzent-phone wifi-up | usb-net | status | splash ...
+#
+# Copyright (C) Indrajit Guha — AGPL-3.0
+
+AGENTIC_DIR="${AGENTIC_DIR:-/usr/share/agentic}"
+WIFI_CONF="$AGENTIC_DIR/wifi/wpa_supplicant.conf"
+
+phone_log() { echo "[pryzent-phone] $*"; echo "[pryzent-phone] $*" >> /var/log/pryzent.log 2>/dev/null; }
+phone_splash() { command -v pryzent-splash >/dev/null 2>&1 && pryzent-splash "$@" >/dev/null 2>&1; true; }
+
+# USB network to a PC (172.16.42.1 = phone). The gadget itself was configured
+# in stage 1; here we (re)start DHCP for the PC and the web UI is reachable at
+# http://172.16.42.1:7080.
+phone_usb_net() {
+    for ifc in usb0 rndis0; do
+        ip link show "$ifc" >/dev/null 2>&1 || continue
+        ip addr add 172.16.42.1/24 dev "$ifc" 2>/dev/null
+        ip link set "$ifc" up
+        mkdir -p /run
+        cat > /run/udhcpd.conf <<EOF
+start 172.16.42.2
+end 172.16.42.2
+interface $ifc
+option subnet 255.255.255.0
+option dns 172.16.42.1
+lease_file /run/udhcpd.leases
+EOF
+        touch /run/udhcpd.leases
+        udhcpd /run/udhcpd.conf 2>/dev/null
+        # Root shell over the USB cable only (bound to the USB address).
+        # Disable with: touch /usr/share/agentic/no-usb-shell
+        [ -f "$AGENTIC_DIR/no-usb-shell" ] || telnetd -b 172.16.42.1:23 -l /bin/sh 2>/dev/null
+        phone_log "USB network on $ifc (phone 172.16.42.1)"
+        return 0
+    done
+    return 1
+}
+
+# Internet through the PC over the USB cable (the PC must share/NAT its
+# connection; see docs/INSTALL-PHONE.md). Works even when Wi-Fi does not.
+phone_usb_internet() {
+    ip route del default 2>/dev/null
+    ip route add default via 172.16.42.2 || return 1
+    printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf
+    phone_log "default route via PC (172.16.42.2)"
+}
+
+# Wi-Fi via wpa_supplicant. Networks are saved by the Settings app (wifi.sh
+# CGI) into $WIFI_CONF on the persistent root.
+phone_wifi_iface() {
+    for d in /sys/class/net/*; do
+        [ -d "$d/wireless" ] || [ -d "$d/phy80211" ] || continue
+        basename "$d"
+        return
+    done
+}
+
+phone_wifi_up() {
+    # Many MediaTek kernels only create wlan0 after this node is poked.
+    [ -e /dev/wmtWifi ] && echo 1 > /dev/wmtWifi 2>/dev/null
+    i=0
+    while [ $i -lt 10 ]; do
+        WLAN=$(phone_wifi_iface)
+        [ -n "$WLAN" ] && break
+        i=$((i + 1)); sleep 1
+    done
+    if [ -z "$WLAN" ]; then
+        phone_log "no Wi-Fi interface (driver/firmware not available on this kernel)"
+        return 1
+    fi
+    command -v wpa_supplicant >/dev/null 2>&1 || { phone_log "wpa_supplicant not installed"; return 1; }
+    mkdir -p "$(dirname "$WIFI_CONF")" /run/wpa_supplicant
+    if [ ! -f "$WIFI_CONF" ]; then
+        printf 'ctrl_interface=/run/wpa_supplicant\nupdate_config=1\n' > "$WIFI_CONF"
+        chmod 600 "$WIFI_CONF"
+    fi
+    ip link set "$WLAN" up 2>/dev/null
+    pkill -f "wpa_supplicant.*$WLAN" 2>/dev/null
+    wpa_supplicant -B -i "$WLAN" -c "$WIFI_CONF" -P /run/wpa_supplicant.pid >/dev/null 2>&1
+    # udhcpc keeps renewing in the background; default.script sets route+DNS.
+    pkill -f "udhcpc.*$WLAN" 2>/dev/null
+    udhcpc -b -i "$WLAN" -p /run/udhcpc.$WLAN.pid >/dev/null 2>&1
+    echo "$WLAN" > /run/pryzent-wlan
+    phone_log "Wi-Fi started on $WLAN"
+}
+
+# Device manager: Xorg/libinput only see the touchscreen once udev has
+# tagged input devices (ID_INPUT_TOUCHSCREEN etc.).
+phone_udev() {
+    command -v udevd >/dev/null 2>&1 || return 0
+    udevd --daemon 2>/dev/null
+    udevadm trigger --action=add 2>/dev/null
+    udevadm settle --timeout=10 2>/dev/null
+}
+
+# The flashed image is only as big as its contents; on first boot grow it to
+# fill the whole userdata partition (online ext4 resize).
+phone_grow_root() {
+    [ -f /etc/pryzent-grown ] && return 0
+    command -v resize2fs >/dev/null 2>&1 || return 0
+    dev=$(awk '$2 == "/" && $1 ~ "^/dev/" {print $1}' /proc/mounts | tail -n 1)
+    [ -n "$dev" ] || return 0
+    phone_splash "First boot" "expanding storage to the full partition..."
+    if resize2fs "$dev" >/var/log/resize2fs.log 2>&1; then
+        touch /etc/pryzent-grown
+        phone_log "root filesystem grown on $dev"
+    fi
+}
+
+# Battery + display facts for the status bar.
+phone_battery() {
+    for b in /sys/class/power_supply/*; do
+        [ "$(cat "$b/type" 2>/dev/null)" = "Battery" ] || continue
+        echo "$(cat "$b/capacity" 2>/dev/null) $(cat "$b/status" 2>/dev/null)"
+        return
+    done
+}
+
+phone_screen_size() { # prints WxH of fb0 / first DRM connector
+    s=$(cat /sys/class/graphics/fb0/virtual_size 2>/dev/null | tr ',' 'x')
+    [ -n "$s" ] && { echo "$s"; return; }
+    for m in /sys/class/drm/card*-*/modes; do
+        head -n 1 "$m" 2>/dev/null && return
+    done
+}
+
+# X11 config for a phone panel + touchscreen. Prefers DRM (modesetting) and
+# falls back to the plain framebuffer, which nearly every Android kernel has.
+phone_xorg_conf() {
+    mkdir -p /etc/X11/xorg.conf.d
+    if [ -e /dev/dri/card0 ]; then DRV=modesetting; else DRV=fbdev; fi
+    cat > /etc/X11/xorg.conf.d/10-pryzent-phone.conf <<EOF
+Section "Device"
+    Identifier "Phone display"
+    Driver "$DRV"
+    Option "fbdev" "/dev/fb0"
+EndSection
+Section "ServerFlags"
+    Option "BlankTime" "0"
+    Option "StandbyTime" "0"
+    Option "SuspendTime" "0"
+    Option "OffTime" "0"
+EndSection
+Section "InputClass"
+    Identifier "Phone touchscreen"
+    MatchIsTouchscreen "on"
+    Driver "libinput"
+EndSection
+Section "InputClass"
+    Identifier "Phone buttons"
+    MatchIsKeyboard "on"
+    Driver "libinput"
+EndSection
+EOF
+    phone_log "Xorg driver: $DRV"
+}
+
+# Chromium device scale: ~160 dpi baseline. Panels are 720..1440 px wide.
+phone_scale_factor() {
+    w=$(phone_screen_size | cut -dx -f1)
+    case "${w:-0}" in
+        0) echo 1 ;;
+        *) if [ "$w" -ge 1300 ]; then echo 3.5
+           elif [ "$w" -ge 1000 ]; then echo 2.6
+           elif [ "$w" -ge 700 ];  then echo 2
+           else echo 1.5; fi ;;
+    esac
+}
+
+[ -n "$PRYZENT_PHONE_SOURCED" ] || case "${1:-}" in
+    wifi-up) phone_wifi_up ;;
+    usb-net) phone_usb_net ;;
+    usb-internet) phone_usb_internet ;;
+    status)
+        echo "wifi: $(cat /run/pryzent-wlan 2>/dev/null || echo none)"
+        echo "battery: $(phone_battery)"
+        echo "screen: $(phone_screen_size)"
+        ;;
+    splash) shift; phone_splash "$@" ;;
+esac
